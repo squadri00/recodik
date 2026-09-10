@@ -10,9 +10,16 @@ from __future__ import annotations
 import json
 import sqlite3
 
-from flask import Blueprint, g, render_template, request
+from flask import (
+    Blueprint,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
-from .auth import login_required
+from .auth import admin_required, login_required
 from .db import get_db
 from .fieldtypes import is_encrypted
 from .store import get_categories
@@ -98,3 +105,14 @@ def search_page():
                 results.append(dict(r))
     return render_template("search.html", query=query, results=results,
                            coming_soon=False)
+
+
+@bp.route("/search/reindex", methods=("POST",))
+@admin_required
+def reindex():
+    """Rebuild the whole FTS index. Handy after template imports or field edits."""
+    db = get_db()
+    count = reindex_all(db)
+    db.commit()
+    flash(f"Search index rebuilt from {count} record(s).", "success")
+    return redirect(request.referrer or url_for("categories.manage"))

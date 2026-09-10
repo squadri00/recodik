@@ -46,4 +46,8 @@
   <input type="file" name="template" accept="application/json,.json" required>
   <button class="btn" type="submit">Import template</button>
 </form>
+
+<form method="post" action="{{ url_for('search.reindex') }}" style="margin-top:1rem">
+  <button class="btn btn-ghost" type="submit">Rebuild search index</button>
+</form>
 {% endblock %}

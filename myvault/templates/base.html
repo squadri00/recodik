@@ -19,6 +19,10 @@
       <a href="{{ url_for('settings.index') }}">Settings</a>
     {% endif %}
   </nav>
+  <form class="topsearch" method="get" action="{{ url_for('search.search_page') }}" role="search">
+    <input type="search" name="q" placeholder="Search…" aria-label="Search all categories"
+           value="{{ request.args.get('q', '') if request.endpoint == 'search.search_page' }}">
+  </form>
   <div class="topbar-right">
     {% if vault_unlocked %}
       <a class="pill pill-ok" href="{{ url_for('auth.lock') }}" title="Lock the vault">🔓 Unlocked</a>

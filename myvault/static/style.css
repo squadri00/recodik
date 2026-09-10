@@ -49,7 +49,11 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
 .topnav { display: flex; gap: 1rem; }
 .topnav a { color: var(--muted); }
 .topnav a:hover { color: var(--text); text-decoration: none; }
-.topbar-right { margin-left: auto; display: flex; align-items: center; gap: .75rem; }
+.topsearch { margin-left: auto; }
+.topsearch input {
+  width: 200px; padding: .35rem .6rem; font-size: .85rem; border-radius: 999px;
+}
+.topbar-right { display: flex; align-items: center; gap: .75rem; }
 .who { color: var(--muted); font-size: .85rem; }
 
 .pill {
