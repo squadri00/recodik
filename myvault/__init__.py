@@ -26,7 +26,14 @@ def create_app(test_config: dict | None = None) -> Flask:
     if test_config:
         app.config.update(test_config)
 
-    os.makedirs(app.instance_path, exist_ok=True)
+    # Best effort: the instance dir only matters when the DB lives inside it.
+    # In a container the app dir is often read-only and the DB is on a volume
+    # (MYVAULT_DB), so a failure here must not be fatal -- db.init_db() creates
+    # the actual database directory.
+    try:
+        os.makedirs(app.instance_path, exist_ok=True)
+    except OSError:
+        pass
 
     import json as _json
 
