@@ -5,6 +5,7 @@
   <h1>{{ category['icon'] or '📁' }} {{ category['name'] }}</h1>
   <div class="row-actions">
     <a class="btn" href="{{ url_for('records.list_records', category_id=category['id']) }}">View records</a>
+    <a class="btn" href="{{ url_for('templates_io.export_category', category_id=category['id']) }}">Export template</a>
     <a class="btn btn-ghost" href="{{ url_for('categories.manage') }}">All categories</a>
   </div>
 </div>
