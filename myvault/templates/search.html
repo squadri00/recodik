@@ -2,10 +2,28 @@
 {% block title %}Search · {{ app_title }}{% endblock %}
 {% block content %}
 <h1>Search</h1>
-{% if coming_soon %}
-  <div class="empty">
-    <p class="empty-title">Global search arrives in Phase 4.</p>
-    <a class="btn" href="{{ url_for('index') }}">Back to dashboard</a>
-  </div>
+
+<form method="get" class="searchbar">
+  <input type="search" name="q" value="{{ query }}" placeholder="Search across all categories…"
+         autofocus autocomplete="off">
+  <button class="btn btn-primary" type="submit">Search</button>
+</form>
+
+{% if results is not none %}
+  {% if results %}
+    <p class="muted">{{ results|length }} match{{ '' if results|length == 1 else 'es' }} for “{{ query }}”.</p>
+    <ul class="results">
+      {% for r in results %}
+        <li>
+          <a href="{{ url_for('records.view', record_id=r['record_id']) }}">
+            <span class="pill pill-cat">{{ r['category_name'] }}</span>
+            <span class="snip">{{ r['snip'] }}</span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty"><p class="empty-title">No matches for “{{ query }}”.</p></div>
+  {% endif %}
 {% endif %}
 {% endblock %}

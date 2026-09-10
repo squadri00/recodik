@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if mode == 'edit' else 'New' }} record · {{ category['name'] }}{% endblock %}
+{% block content %}
+<h1>{{ category['icon'] or '📁' }} {{ 'Edit record' if mode == 'edit' else 'New record' }} — {{ category['name'] }}</h1>
+
+<div class="card" style="max-width:640px">
+<form method="post" data-reveal-form>
+  {% for f in fields %}
+    {% set val = values.get(f['field_key']) %}
+    {% set has_saved = mode == 'edit' and existing is defined and existing.get(f['field_key']) %}
+    <div class="rec-field">
+      <label for="fld-{{ f['field_key'] }}">
+        {{ f['label'] }}{% if f['required'] %} <span class="req">*</span>{% endif %}
+      </label>
+
+      {% if f['field_type'] == 'textarea' %}
+        <textarea id="fld-{{ f['field_key'] }}" name="{{ f['field_key'] }}" rows="4"
+                  {{ 'required' if f['required'] }}>{{ val }}</textarea>
+
+      {% elif f['field_type'] == 'code' %}
+        <textarea id="fld-{{ f['field_key'] }}" name="{{ f['field_key'] }}" rows="6"
+                  class="mono" spellcheck="false" {{ 'required' if f['required'] }}>{{ val }}</textarea>
+
+      {% elif f['field_type'] == 'password' %}
+        <input id="fld-{{ f['field_key'] }}" type="password" name="{{ f['field_key'] }}"
+               autocomplete="new-password"
+               placeholder="{{ 'Leave blank to keep current value' if has_saved else '' }}"
+               {{ 'required' if f['required'] and not has_saved }}>
+        {% if has_saved %}
+          <span class="hint">
+            A value is saved (encrypted).
+            <button type="button" class="linkbtn" data-reveal
+                    data-record="{{ record_id }}" data-field="{{ f['field_key'] }}">Reveal</button>
+            <span class="reveal-out" data-out-for="{{ f['field_key'] }}"></span>
+          </span>
+        {% endif %}
+
+      {% elif f['field_type'] == 'dropdown' %}
+        <select id="fld-{{ f['field_key'] }}" name="{{ f['field_key'] }}" {{ 'required' if f['required'] }}>
+          <option value="">{{ '— choose —' }}</option>
+          {% for opt in f['options'] | fromjson %}
+            <option value="{{ opt }}" {{ 'selected' if val == opt }}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+
+      {% elif f['field_type'] == 'multiselect' %}
+        <div class="checks">
+          {% for opt in f['options'] | fromjson %}
+            <label class="check">
+              <input type="checkbox" name="{{ f['field_key'] }}" value="{{ opt }}"
+                     {{ 'checked' if opt in val }}> {{ opt }}
+            </label>
+          {% endfor %}
+        </div>
+
+      {% elif f['field_type'] == 'checkbox' %}
+        <label class="check">
+          <input type="checkbox" id="fld-{{ f['field_key'] }}" name="{{ f['field_key'] }}" value="1"
+                 {{ 'checked' if val }}> Yes
+        </label>
+
+      {% elif f['field_type'] == 'number' %}
+        <input id="fld-{{ f['field_key'] }}" type="number" step="any" name="{{ f['field_key'] }}"
+               value="{{ val }}" {{ 'required' if f['required'] }}>
+
+      {% elif f['field_type'] == 'date' %}
+        <input id="fld-{{ f['field_key'] }}" type="date" name="{{ f['field_key'] }}"
+               value="{{ val }}" {{ 'required' if f['required'] }}>
+
+      {% elif f['field_type'] == 'url' %}
+        <input id="fld-{{ f['field_key'] }}" type="url" name="{{ f['field_key'] }}"
+               value="{{ val }}" placeholder="https://…" {{ 'required' if f['required'] }}>
+
+      {% elif f['field_type'] == 'email' %}
+        <input id="fld-{{ f['field_key'] }}" type="email" name="{{ f['field_key'] }}"
+               value="{{ val }}" {{ 'required' if f['required'] }}>
+
+      {% else %}
+        <input id="fld-{{ f['field_key'] }}" type="text" name="{{ f['field_key'] }}"
+               value="{{ val }}" {{ 'required' if f['required'] }}>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <button class="btn btn-primary" type="submit">{{ 'Save changes' if mode == 'edit' else 'Add record' }}</button>
+  <a class="btn btn-ghost" href="{{ url_for('records.list_records', category_id=category['id']) }}">Cancel</a>
+</form>
+</div>
+{% endblock %}

@@ -24,6 +24,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
   margin: 0;
   font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -147,3 +148,47 @@ label.check input { width: auto; }
 @media (max-width: 640px) {
   .inline-grid, .field-row { grid-template-columns: 1fr; }
 }
+
+/* --- records --- */
+.rec-field { margin-bottom: 1rem; }
+.rec-field label { margin-top: 0; }
+.req { color: var(--error-ink); }
+textarea.mono, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .88rem; }
+.checks { display: flex; flex-wrap: wrap; gap: .35rem 1rem; }
+
+.table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+.table-scroll .tbl { min-width: 100%; }
+.table-scroll .tbl th, .table-scroll .tbl td { white-space: nowrap; }
+.cell-code { background: var(--bg); padding: .1rem .35rem; border-radius: 4px; }
+
+.masked { letter-spacing: .1em; color: var(--muted); }
+.linkbtn {
+  background: none; border: none; padding: 0; margin: 0 0 0 .35rem;
+  color: var(--primary); cursor: pointer; font: inherit; font-size: .85em; text-decoration: underline;
+  width: auto;
+}
+.reveal-out { margin-left: .4rem; }
+.reveal-err { color: var(--error-ink); }
+.revealed-value {
+  background: var(--warn-bg); color: var(--warn-ink);
+  padding: .1rem .4rem; border-radius: 4px; font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+
+.detail { display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: .55rem 1rem; margin: 0; }
+.detail dt { color: var(--muted); font-weight: 600; }
+.detail dd { margin: 0; word-break: break-word; }
+
+/* --- search --- */
+.searchbar { display: flex; gap: .6rem; margin: 1rem 0 1.5rem; }
+.searchbar input { flex: 1; }
+.searchbar .btn-primary { margin-top: 0; }
+.results { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
+.results li a {
+  display: flex; gap: .75rem; align-items: baseline;
+  padding: .7rem .85rem; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+}
+.results li a:hover { border-color: var(--primary); text-decoration: none; }
+.pill-cat { background: var(--bg); color: var(--muted); font-size: .78rem; padding: .15rem .5rem; border-radius: 999px; flex-shrink: 0; }
+.snip { color: var(--text); }
+.snip mark, .results mark { background: var(--warn-bg); color: var(--warn-ink); }

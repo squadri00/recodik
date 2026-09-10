@@ -1,19 +1,100 @@
 """FTS5-backed global search + index maintenance.
 
-Phase 1 ships a placeholder page so navigation resolves; the real search UI and
-the index-sync hooks land in Phase 4.
+Index-sync helpers are used from record CRUD (Phase 3 onward). The search UI and
+the full reindex command land in Phase 4. Encrypted (password) field values are
+never written to the index.
 """
 
 from __future__ import annotations
 
-from flask import Blueprint, render_template
+import json
+import sqlite3
+
+from flask import Blueprint, g, render_template, request
 
 from .auth import login_required
+from .db import get_db
+from .fieldtypes import is_encrypted
+from .store import get_categories
 
 bp = Blueprint("search", __name__)
+
+
+def record_search_text(fields, data: dict) -> str:
+    parts: list[str] = []
+    for f in fields:
+        if is_encrypted(f["field_type"]):
+            continue
+        value = data.get(f["field_key"])
+        if value is None or value == "":
+            continue
+        if isinstance(value, list):
+            parts.append(" ".join(str(v) for v in value))
+        elif isinstance(value, bool):
+            if value:
+                parts.append(f["label"])
+        else:
+            parts.append(str(value))
+    return "  ".join(p for p in parts if p)
+
+
+def reindex_record(db: sqlite3.Connection, record_id: int) -> None:
+    db.execute("DELETE FROM records_fts WHERE record_id = ?", (record_id,))
+    row = db.execute(
+        "SELECT r.id, r.category_id, r.data, c.name AS category_name "
+        "FROM records r JOIN categories c ON c.id = r.category_id WHERE r.id = ?",
+        (record_id,),
+    ).fetchone()
+    if row is None:
+        return
+    fields = db.execute(
+        "SELECT * FROM fields WHERE category_id = ?", (row["category_id"],)
+    ).fetchall()
+    text = record_search_text(fields, json.loads(row["data"] or "{}"))
+    db.execute(
+        "INSERT INTO records_fts(record_id, category_id, category_name, content) "
+        "VALUES(?, ?, ?, ?)",
+        (row["id"], row["category_id"], row["category_name"], text),
+    )
+
+
+def remove_record(db: sqlite3.Connection, record_id: int) -> None:
+    db.execute("DELETE FROM records_fts WHERE record_id = ?", (record_id,))
+
+
+def reindex_all(db: sqlite3.Connection) -> int:
+    db.execute("DELETE FROM records_fts")
+    ids = [r["id"] for r in db.execute("SELECT id FROM records").fetchall()]
+    for rid in ids:
+        reindex_record(db, rid)
+    return len(ids)
+
+
+def _fts_query(raw: str) -> str:
+    """Turn a plain user string into a safe FTS5 MATCH expression (prefix-AND)."""
+    tokens = [t for t in "".join(
+        ch if ch.isalnum() or ch.isspace() else " " for ch in raw
+    ).split() if t]
+    return " AND ".join(f'{t}*' for t in tokens)
 
 
 @bp.route("/search")
 @login_required
 def search_page():
-    return render_template("search.html", query="", results=None, coming_soon=True)
+    query = (request.args.get("q") or "").strip()
+    results = None
+    if query:
+        match = _fts_query(query)
+        results = []
+        if match:
+            db = get_db()
+            rows = db.execute(
+                "SELECT record_id, category_id, category_name, "
+                "snippet(records_fts, 3, '[', ']', ' … ', 12) AS snip "
+                "FROM records_fts WHERE records_fts MATCH ? ORDER BY rank LIMIT 100",
+                (match,),
+            ).fetchall()
+            for r in rows:
+                results.append(dict(r))
+    return render_template("search.html", query=query, results=results,
+                           coming_soon=False)

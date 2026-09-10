@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Record · {{ category['name'] }} · {{ app_title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ category['icon'] or '📁' }} {{ category['name'] }}</h1>
+  <div class="row-actions">
+    <a class="btn btn-primary" href="{{ url_for('records.edit', record_id=record['id']) }}">Edit</a>
+    <a class="btn btn-ghost" href="{{ url_for('records.list_records', category_id=category['id']) }}">Back to list</a>
+  </div>
+</div>
+
+<div class="card" data-reveal-form>
+  <dl class="detail">
+    {% for cell in record['cells'] %}
+      <dt>{{ cell['label'] }}</dt>
+      <dd>{% set rec = record %}{% include "_cell.html" %}</dd>
+    {% endfor %}
+  </dl>
+  <p class="muted" style="margin-top:1rem">Last updated {{ record['updated_at'] }}</p>
+</div>
+{% endblock %}

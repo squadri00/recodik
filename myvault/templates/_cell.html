@@ -1,0 +1,25 @@
+{#- one record value. `cell` + `rec` in context. Never emits ciphertext. -#}
+{%- if cell['encrypted'] -%}
+  {%- if cell['has_value'] -%}
+    <span class="masked">••••••••</span>
+    <button type="button" class="linkbtn" data-reveal
+            data-record="{{ rec['id'] }}" data-field="{{ cell['key'] }}">Reveal</button>
+    <span class="reveal-out" data-out-for="{{ cell['key'] }}-{{ rec['id'] }}"></span>
+  {%- else -%}
+    <span class="muted">—</span>
+  {%- endif -%}
+{%- elif cell['type'] == 'checkbox' -%}
+  {{ '✓' if cell['checked'] else '—' }}
+{%- elif cell['type'] == 'multiselect' -%}
+  {%- if cell['items'] -%}{{ cell['items'] | join(', ') }}{%- else -%}<span class="muted">—</span>{%- endif -%}
+{%- elif not cell['has_value'] -%}
+  <span class="muted">—</span>
+{%- elif cell['type'] == 'url' -%}
+  <a href="{{ cell['raw'] }}" target="_blank" rel="noopener noreferrer">{{ cell['raw'] }}</a>
+{%- elif cell['type'] == 'email' -%}
+  <a href="mailto:{{ cell['raw'] }}">{{ cell['raw'] }}</a>
+{%- elif cell['type'] == 'code' -%}
+  <code class="cell-code">{{ cell['raw'] }}</code>
+{%- else -%}
+  {{ cell['raw'] }}
+{%- endif -%}

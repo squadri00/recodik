@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ category['name'] }} · {{ app_title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ category['icon'] or '📁' }} {{ category['name'] }}</h1>
+  <div class="row-actions">
+    <a class="btn btn-primary" href="{{ url_for('records.create', category_id=category['id']) }}">New record</a>
+    {% if current_user['role'] == 'admin' %}
+      <a class="btn btn-ghost" href="{{ url_for('categories.edit', category_id=category['id']) }}">Edit fields</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if not fields %}
+  <div class="empty">
+    <p class="empty-title">This category has no fields yet.</p>
+    {% if current_user['role'] == 'admin' %}
+      <a class="btn btn-primary" href="{{ url_for('categories.edit', category_id=category['id']) }}">Add fields</a>
+    {% endif %}
+  </div>
+{% elif not records %}
+  <div class="empty">
+    <p class="empty-title">No records yet.</p>
+    <a class="btn btn-primary" href="{{ url_for('records.create', category_id=category['id']) }}">Add the first one</a>
+  </div>
+{% else %}
+  <div class="table-scroll">
+  <table class="tbl" data-reveal-form>
+    <thead>
+      <tr>
+        {% for f in fields %}<th>{{ f['label'] }}</th>{% endfor %}
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rec in records %}
+        <tr>
+          {% for cell in rec['cells'] %}
+            <td>{% include "_cell.html" %}</td>
+          {% endfor %}
+          <td class="row-actions">
+            <a class="btn" href="{{ url_for('records.view', record_id=rec['id']) }}">Open</a>
+            <a class="btn" href="{{ url_for('records.edit', record_id=rec['id']) }}">Edit</a>
+            <form method="post" action="{{ url_for('records.delete', record_id=rec['id']) }}"
+                  onsubmit="return confirm('Delete this record?');">
+              <button class="btn btn-danger" type="submit">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+{% endif %}
+{% endblock %}

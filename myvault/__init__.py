@@ -28,6 +28,15 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     os.makedirs(app.instance_path, exist_ok=True)
 
+    import json as _json
+
+    @app.template_filter("fromjson")
+    def _fromjson(value):
+        try:
+            return _json.loads(value) if value else []
+        except (ValueError, TypeError):
+            return []
+
     from . import db
 
     with app.app_context():
