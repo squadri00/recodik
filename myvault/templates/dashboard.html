@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>Your categories</h1>
+  {% if current_user['role'] == 'admin' %}
+    <a class="btn btn-primary" href="{{ url_for('categories.new') }}">New category</a>
+  {% endif %}
+</div>
+
+{% if categories %}
+  <div class="grid">
+    {% for c in categories %}
+      <a class="card cat-card" href="{{ url_for('records.list_records', category_id=c['id']) }}">
+        <span class="cat-icon">{{ c['icon'] or '📁' }}</span>
+        <span class="cat-name">{{ c['name'] }}</span>
+        <span class="cat-count">{{ c['record_count'] }} record{{ '' if c['record_count'] == 1 else 's' }}</span>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty">
+    <p class="empty-title">No categories yet.</p>
+    {% if current_user['role'] == 'admin' %}
+      <p>Create one to start &mdash; for example <em>Commands</em>, <em>UnPw</em>, or <em>Hosting</em>.</p>
+      <a class="btn btn-primary" href="{{ url_for('categories.new') }}">Create your first category</a>
+    {% else %}
+      <p>Ask an administrator to create a category.</p>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

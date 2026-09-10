@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Search · {{ app_title }}{% endblock %}
+{% block content %}
+<h1>Search</h1>
+{% if coming_soon %}
+  <div class="empty">
+    <p class="empty-title">Global search arrives in Phase 4.</p>
+    <a class="btn" href="{{ url_for('index') }}">Back to dashboard</a>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Unlock · {{ app_title }}{% endblock %}
+{% block content %}
+<div class="card auth-card">
+  <h1>🔒 Vault locked</h1>
+  <p class="muted">
+    Enter the master password to decrypt sensitive fields for this session.
+    Records and non-sensitive fields stay readable while locked.
+  </p>
+  <form method="post" autocomplete="off">
+    <label>Master password
+      <input type="password" name="master_password" required autofocus
+             autocomplete="off">
+    </label>
+    <button class="btn btn-primary" type="submit">Unlock</button>
+  </form>
+</div>
+{% endblock %}

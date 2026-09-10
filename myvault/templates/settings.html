@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Settings · {{ app_title }}{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+{% if coming_soon %}
+  <div class="empty">
+    <p class="empty-title">User management arrives in Phase 5; master-password change and title customization in Phase 9.</p>
+    <a class="btn" href="{{ url_for('index') }}">Back to dashboard</a>
+  </div>
+{% endif %}
+{% endblock %}

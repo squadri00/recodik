@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Sign in · {{ app_title }}{% endblock %}
+{% block content %}
+<div class="card auth-card">
+  <h1>🗄️ {{ app_title }}</h1>
+  <p class="muted">Sign in to your vault.</p>
+  <form method="post" autocomplete="off">
+    <label>Username
+      <input type="text" name="username" value="{{ username }}" required autofocus
+             autocapitalize="none" spellcheck="false">
+    </label>
+    <label>Password
+      <input type="password" name="password" required autocomplete="current-password">
+    </label>
+    <button class="btn btn-primary" type="submit">Sign in</button>
+  </form>
+</div>
+{% endblock %}
