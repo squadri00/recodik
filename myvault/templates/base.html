@@ -15,6 +15,7 @@
     <a href="{{ url_for('index') }}">Dashboard</a>
     <a href="{{ url_for('search.search_page') }}">Search</a>
     {% if current_user['role'] == 'admin' %}
+      <a href="{{ url_for('categories.manage') }}">Categories</a>
       <a href="{{ url_for('settings.index') }}">Settings</a>
     {% endif %}
   </nav>

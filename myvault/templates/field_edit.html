@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Edit field · {{ category['name'] }} · {{ app_title }}{% endblock %}
+{% block content %}
+<h1>Edit field — {{ category['name'] }}</h1>
+
+<div class="card" style="max-width:560px">
+  <form method="post" action="{{ url_for('categories.field_update', category_id=category['id'], field_id=field['id']) }}"
+        data-field-form>
+    <label>Label
+      <input type="text" name="label" value="{{ field['label'] }}" required maxlength="80" autofocus>
+    </label>
+    <label>Machine key <span class="hint">Fixed after creation — record data is stored under this key.</span>
+      <input type="text" value="{{ field['field_key'] }}" readonly>
+    </label>
+    <label>Type
+      <select name="field_type" data-field-type>
+        {% for key, meta in field_types.items() %}
+          <option value="{{ key }}" data-options="{{ 1 if meta['options'] else 0 }}"
+                  {{ 'selected' if key == field['field_type'] }}>{{ meta['label'] }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="check">
+      <input type="checkbox" name="required" value="1" {{ 'checked' if field['required'] }}> Required
+    </label>
+    <label data-options-wrap {{ 'hidden' if not (field['field_type'] in field_types and field_types[field['field_type']]['options']) }}>
+      Options <span class="hint">One per line.</span>
+      <textarea name="options" rows="4">{{ options_text }}</textarea>
+    </label>
+    <button class="btn btn-primary" type="submit">Save field</button>
+    <a class="btn btn-ghost" href="{{ url_for('categories.edit', category_id=category['id']) }}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

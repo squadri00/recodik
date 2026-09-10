@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Categories · {{ app_title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Manage categories</h1>
+  <a class="btn btn-primary" href="{{ url_for('categories.new') }}">New category</a>
+</div>
+
+{% if categories %}
+<table class="tbl">
+  <thead><tr><th>Order</th><th>Category</th><th>Records</th><th></th></tr></thead>
+  <tbody>
+  {% for c in categories %}
+    <tr>
+      <td class="reorder">
+        <form method="post" action="{{ url_for('categories.move', category_id=c['id']) }}">
+          <button name="dir" value="up" class="btn btn-ghost" {{ 'disabled' if loop.first }}>▲</button>
+          <button name="dir" value="down" class="btn btn-ghost" {{ 'disabled' if loop.last }}>▼</button>
+        </form>
+      </td>
+      <td><span class="cat-icon-sm">{{ c['icon'] or '📁' }}</span> {{ c['name'] }}</td>
+      <td>{{ c['record_count'] }}</td>
+      <td class="row-actions">
+        <a class="btn" href="{{ url_for('categories.edit', category_id=c['id']) }}">Edit fields</a>
+        <a class="btn" href="{{ url_for('templates_io.export_category', category_id=c['id']) }}">Export</a>
+        <form method="post" action="{{ url_for('categories.delete', category_id=c['id']) }}"
+              onsubmit="return confirm('Delete “{{ c['name'] }}” and all {{ c['record_count'] }} of its records? This cannot be undone.');">
+          <button class="btn btn-danger" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">
+  <p class="empty-title">No categories yet.</p>
+  <a class="btn btn-primary" href="{{ url_for('categories.new') }}">Create your first category</a>
+</div>
+{% endif %}
+
+<p class="muted" style="margin-top:1.5rem">
+  Import a shared template to create a new category:
+</p>
+<form method="post" action="{{ url_for('templates_io.import_category') }}" enctype="multipart/form-data" class="inline-form">
+  <input type="file" name="template" accept="application/json,.json" required>
+  <button class="btn" type="submit">Import template</button>
+</form>
+{% endblock %}

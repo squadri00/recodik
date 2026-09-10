@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}New category · {{ app_title }}{% endblock %}
+{% block content %}
+<h1>New category</h1>
+<div class="card" style="max-width:480px">
+  <form method="post">
+    <label>Name
+      <input type="text" name="name" required autofocus maxlength="80"
+             placeholder="e.g. Commands, UnPw, Hosting">
+    </label>
+    <label>Icon <span class="hint">An emoji or a short symbol. Optional.</span>
+      <input type="text" name="icon" maxlength="8" placeholder="📁">
+    </label>
+    <button class="btn btn-primary" type="submit">Create</button>
+    <a class="btn btn-ghost" href="{{ url_for('categories.manage') }}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

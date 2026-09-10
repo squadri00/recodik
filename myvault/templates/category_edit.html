@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ category['name'] }} · fields · {{ app_title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ category['icon'] or '📁' }} {{ category['name'] }}</h1>
+  <div class="row-actions">
+    <a class="btn" href="{{ url_for('records.list_records', category_id=category['id']) }}">View records</a>
+    <a class="btn btn-ghost" href="{{ url_for('categories.manage') }}">All categories</a>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Category details</h2>
+  <form method="post" action="{{ url_for('categories.update', category_id=category['id']) }}" class="inline-grid">
+    <label>Name
+      <input type="text" name="name" value="{{ category['name'] }}" required maxlength="80">
+    </label>
+    <label>Icon
+      <input type="text" name="icon" value="{{ category['icon'] }}" maxlength="8">
+    </label>
+    <button class="btn btn-primary" type="submit">Save</button>
+  </form>
+</div>
+
+<div class="card" style="margin-top:1.25rem">
+  <h2>Fields</h2>
+  {% if fields %}
+  <table class="tbl">
+    <thead><tr><th>Order</th><th>Label</th><th>Key</th><th>Type</th><th>Required</th><th></th></tr></thead>
+    <tbody>
+    {% for f in fields %}
+      <tr>
+        <td class="reorder">
+          <form method="post" action="{{ url_for('categories.field_move', category_id=category['id'], field_id=f['id']) }}">
+            <button name="dir" value="up" class="btn btn-ghost" {{ 'disabled' if loop.first }}>▲</button>
+            <button name="dir" value="down" class="btn btn-ghost" {{ 'disabled' if loop.last }}>▼</button>
+          </form>
+        </td>
+        <td>{{ f['label'] }}</td>
+        <td><code>{{ f['field_key'] }}</code></td>
+        <td>{{ field_types[f['field_type']]['label'] if f['field_type'] in field_types else f['field_type'] }}</td>
+        <td>{{ 'Yes' if f['required'] else '—' }}</td>
+        <td class="row-actions">
+          <a class="btn" href="{{ url_for('categories.field_edit', category_id=category['id'], field_id=f['id']) }}">Edit</a>
+          <form method="post" action="{{ url_for('categories.field_delete', category_id=category['id'], field_id=f['id']) }}"
+                onsubmit="return confirm('Remove field “{{ f['label'] }}”?');">
+            <button class="btn btn-danger" type="submit">Remove</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="muted">No fields yet. Add the first one below.</p>
+  {% endif %}
+
+  <h3 style="margin-top:1.5rem">Add a field</h3>
+  <form method="post" action="{{ url_for('categories.field_add', category_id=category['id']) }}" data-field-form>
+    <div class="field-row">
+      <label>Label
+        <input type="text" name="label" required maxlength="80" placeholder="e.g. SSH Key">
+      </label>
+      <label>Type
+        <select name="field_type" data-field-type>
+          {% for key, meta in field_types.items() %}
+            <option value="{{ key }}" data-options="{{ 1 if meta['options'] else 0 }}">{{ meta['label'] }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="check">
+        <input type="checkbox" name="required" value="1"> Required
+      </label>
+    </div>
+    <label data-options-wrap hidden>Options <span class="hint">One per line (dropdown / multi-select).</span>
+      <textarea name="options" rows="4" placeholder="Local&#10;Live"></textarea>
+    </label>
+    <button class="btn btn-primary" type="submit">Add field</button>
+  </form>
+</div>
+{% endblock %}
