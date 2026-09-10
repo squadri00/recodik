@@ -77,6 +77,17 @@ def reindex_all(db: sqlite3.Connection) -> int:
     return len(ids)
 
 
+def _highlight(snip: str):
+    """Escape the snippet, then turn the STX/ETX match markers into <mark>.
+
+    Everything except our own <mark> tags is escaped, so record content can't
+    inject HTML into the results page.
+    """
+    from markupsafe import Markup, escape
+
+    return Markup(str(escape(snip)).replace("\x02", "<mark>").replace("\x03", "</mark>"))
+
+
 def _fts_query(raw: str) -> str:
     """Turn a plain user string into a safe FTS5 MATCH expression (prefix-AND)."""
     tokens = [t for t in "".join(
@@ -97,12 +108,14 @@ def search_page():
             db = get_db()
             rows = db.execute(
                 "SELECT record_id, category_id, category_name, "
-                "snippet(records_fts, 3, '[', ']', ' … ', 12) AS snip "
+                "snippet(records_fts, 3, char(2), char(3), ' … ', 12) AS snip "
                 "FROM records_fts WHERE records_fts MATCH ? ORDER BY rank LIMIT 100",
                 (match,),
             ).fetchall()
             for r in rows:
-                results.append(dict(r))
+                d = dict(r)
+                d["snip_html"] = _highlight(d.pop("snip") or "")
+                results.append(d)
     return render_template("search.html", query=query, results=results,
                            coming_soon=False)
 

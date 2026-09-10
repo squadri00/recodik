@@ -19,7 +19,9 @@
 {%- elif cell['type'] == 'email' -%}
   <a href="mailto:{{ cell['raw'] }}">{{ cell['raw'] }}</a>
 {%- elif cell['type'] == 'code' -%}
-  <code class="cell-code">{{ cell['raw'] }}</code>
+  <code class="cell-code trunc" title="{{ cell['raw'] }}">{{ cell['raw'] }}</code>
+{%- elif cell['type'] == 'textarea' -%}
+  <span class="trunc" title="{{ cell['raw'] }}">{{ cell['raw'] }}</span>
 {%- else -%}
   {{ cell['raw'] }}
 {%- endif -%}

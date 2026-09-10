@@ -17,7 +17,7 @@
         <li>
           <a href="{{ url_for('records.view', record_id=r['record_id']) }}">
             <span class="pill pill-cat">{{ r['category_name'] }}</span>
-            <span class="snip">{{ r['snip'] }}</span>
+            <span class="snip">{{ r['snip_html'] }}</span>
           </a>
         </li>
       {% endfor %}

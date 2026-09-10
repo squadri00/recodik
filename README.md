@@ -120,6 +120,20 @@ noted above.
 
 ---
 
+## Tests
+
+End-to-end smoke tests (no external test framework — they drive the app through
+Flask's test client and inspect the SQLite file directly):
+
+```bash
+python tests/run_all.py
+```
+
+They cover: first-run setup / auth / lock-unlock, the category + field builder,
+record CRUD with encryption-at-rest and reveal, FTS search sync, multi-user role
+enforcement, template export/import round-trips, input validation, and a full
+"no plaintext or ciphertext in any rendered view" audit.
+
 ## Project layout
 
 ```

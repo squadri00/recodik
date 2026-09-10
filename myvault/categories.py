@@ -146,13 +146,14 @@ def field_add(category_id: int):
     required = 1 if request.form.get("required") else 0
     options = _parse_options(request.form.get("options", ""))
 
-    error = _validate_field(label, ftype, options)
+    existing = get_fields(category_id)
+    error = _validate_field(label, ftype, options) or _dup_label(label, existing)
     if error:
         flash(error, "error")
         return redirect(url_for("categories.edit", category_id=category_id))
 
     db = get_db()
-    taken = {r["field_key"] for r in get_fields(category_id)}
+    taken = {r["field_key"] for r in existing}
     field_key = uniquify_key(slugify_key(label), taken)
     db.execute(
         "INSERT INTO fields(category_id, label, field_key, field_type, options, required, sort_order) "
@@ -197,7 +198,8 @@ def field_update(category_id: int, field_id: int):
     required = 1 if request.form.get("required") else 0
     options = _parse_options(request.form.get("options", ""))
 
-    error = _validate_field(label, ftype, options)
+    others = [f for f in get_fields(category_id) if f["id"] != field_id]
+    error = _validate_field(label, ftype, options) or _dup_label(label, others)
     if error:
         flash(error, "error")
         return redirect(
@@ -253,6 +255,12 @@ def field_move(category_id: int, field_id: int):
 
 
 # --- validation --------------------------------------------------------
+
+def _dup_label(label: str, existing) -> str | None:
+    if any((f["label"] or "").strip().lower() == label.strip().lower() for f in existing):
+        return f"This category already has a field called “{label}”."
+    return None
+
 
 def _validate_field(label: str, ftype: str, options: list[str]) -> str | None:
     if not label:

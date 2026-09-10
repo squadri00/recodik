@@ -109,4 +109,14 @@ def create_app(test_config: dict | None = None) -> Flask:
         return render_template("error.html", code=404,
                                message="Nothing here."), 404
 
+    @app.errorhandler(413)
+    def too_large(_e):
+        return render_template("error.html", code=413,
+                               message="That upload is too large."), 413
+
+    @app.errorhandler(500)
+    def server_error(_e):
+        return render_template("error.html", code=500,
+                               message="Something went wrong on the server."), 500
+
     return app

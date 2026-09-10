@@ -25,11 +25,11 @@
   </div>
 {% else %}
   <div class="table-scroll">
-  <table class="tbl" data-reveal-form>
+  <table class="tbl tbl-records" data-reveal-form>
     <thead>
       <tr>
         {% for f in fields %}<th>{{ f['label'] }}</th>{% endfor %}
-        <th></th>
+        <th class="sticky-col">Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -38,18 +38,16 @@
           {% for cell in rec['cells'] %}
             <td>{% include "_cell.html" %}</td>
           {% endfor %}
-          <td class="row-actions">
+          <td class="sticky-col">
             <a class="btn" href="{{ url_for('records.view', record_id=rec['id']) }}">Open</a>
-            <a class="btn" href="{{ url_for('records.edit', record_id=rec['id']) }}">Edit</a>
-            <form method="post" action="{{ url_for('records.delete', record_id=rec['id']) }}"
-                  onsubmit="return confirm('Delete this record?');">
-              <button class="btn btn-danger" type="submit">Delete</button>
-            </form>
           </td>
         </tr>
       {% endfor %}
     </tbody>
   </table>
   </div>
+  <p class="muted" style="margin-top:.75rem">
+    {{ records|length }} record{{ '' if records|length == 1 else 's' }}. Open a record to edit or delete it.
+  </p>
 {% endif %}
 {% endblock %}

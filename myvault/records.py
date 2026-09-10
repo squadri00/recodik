@@ -13,6 +13,7 @@ Encryption contract:
 from __future__ import annotations
 
 import json
+from datetime import datetime
 
 from flask import (
     Blueprint,
@@ -108,6 +109,12 @@ def parse_form(fields, form, existing: dict | None) -> tuple[dict, list[str]]:
                 float(raw)
             except ValueError:
                 errors.append(f"“{f['label']}” must be a number.")
+            data[key] = raw
+        elif ftype == "date":
+            try:
+                datetime.strptime(raw, "%Y-%m-%d")
+            except ValueError:
+                errors.append(f"“{f['label']}” must be a date (YYYY-MM-DD).")
             data[key] = raw
         elif ftype == "dropdown":
             allowed = set(json.loads(f["options"] or "[]"))
