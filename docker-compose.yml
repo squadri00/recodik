@@ -1,0 +1,17 @@
+services:
+  myvault:
+    build: .
+    image: myvault:latest
+    container_name: myvault
+    ports:
+      # host:container -- change the host side with MYVAULT_PORT in a .env file
+      - "${MYVAULT_PORT:-8000}:8000"
+    environment:
+      MYVAULT_THREADS: "8"
+    volumes:
+      # SQLite database persists here across container restarts / rebuilds
+      - myvault-data:/data
+    restart: unless-stopped
+
+volumes:
+  myvault-data:
