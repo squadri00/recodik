@@ -29,7 +29,9 @@ hiddenimports = [
     "myvault.util",
     "myvault.db",
     "myvault.paths",
-] + collect_submodules("waitress")
+    "myvault.richtext",
+    "markdown.extensions.nl2br",
+] + collect_submodules("waitress") + collect_submodules("markdown.extensions")
 
 a = Analysis(
     ["desktop.py"],

@@ -89,7 +89,8 @@ assert SECRET.encode() not in r.data and SSHKEY.encode() not in r.data
 assert b'data-reveal' in r.data and "••••••••".encode() in r.data
 r = c.get(f"/records/{rid}")
 assert SECRET.encode() not in r.data
-print("OK  list + detail render masked, no plaintext")
+assert f'action="/records/{rid}/delete"'.encode() in r.data
+print("OK  list + detail render masked, no plaintext; detail page has a Delete control")
 
 # --- reveal endpoint returns plaintext (vault unlocked) ---
 r = c.post(f"/records/{rid}/reveal", data={"field_key": "password"})

@@ -63,6 +63,59 @@ document.addEventListener("click", function (e) {
     .finally(function () { btn.disabled = false; });
 });
 
+// --- Markdown toolbar for `textarea` fields ---------------------------------
+// Inserts plain Markdown syntax around the current selection. No editor
+// library -- the field stays a normal <textarea>, formatting just gets
+// rendered when you view the record (see myvault/richtext.py).
+document.querySelectorAll("[data-md-toolbar]").forEach(function (bar) {
+  var ta = document.getElementById(bar.dataset.for);
+  if (!ta) return;
+  bar.querySelectorAll("[data-md]").forEach(function (btn) {
+    btn.addEventListener("click", function () { applyMarkdown(ta, btn.dataset.md); });
+  });
+});
+
+function applyMarkdown(ta, kind) {
+  var start = ta.selectionStart, end = ta.selectionEnd;
+  var value = ta.value;
+  var selected = value.slice(start, end);
+  var before = value.slice(0, start), after = value.slice(end);
+
+  function wrap(left, right, placeholder) {
+    var text = selected || placeholder;
+    ta.value = before + left + text + right + after;
+    var selStart = before.length + left.length;
+    ta.setSelectionRange(selStart, selStart + text.length);
+  }
+
+  function prefixLines(makeLine) {
+    var lineStart = value.lastIndexOf("\n", start - 1) + 1;
+    var lineEnd = value.indexOf("\n", end);
+    if (lineEnd === -1) lineEnd = value.length;
+    var block = value.slice(lineStart, lineEnd);
+    var lines = block.split("\n").map(makeLine);
+    var joined = lines.join("\n");
+    ta.value = value.slice(0, lineStart) + joined + value.slice(lineEnd);
+    ta.setSelectionRange(lineStart, lineStart + joined.length);
+  }
+
+  switch (kind) {
+    case "bold": wrap("**", "**", "bold text"); break;
+    case "italic": wrap("_", "_", "italic text"); break;
+    case "code": wrap("`", "`", "code"); break;
+    case "link": {
+      var url = window.prompt("Link URL:", "https://");
+      if (url === null) return;
+      wrap("[", "](" + url + ")", "link text");
+      break;
+    }
+    case "h2": prefixLines(function (ln) { return /^##\s/.test(ln) ? ln.replace(/^##\s/, "") : "## " + ln; }); break;
+    case "ul": prefixLines(function (ln) { return /^-\s/.test(ln) ? ln : "- " + ln; }); break;
+    case "ol": prefixLines(function (ln, i) { return /^\d+\.\s/.test(ln) ? ln : (i + 1) + ". " + ln; }); break;
+  }
+  ta.focus();
+}
+
 function renderRevealed(out, value) {
   out.textContent = "";
   var code = document.createElement("code");

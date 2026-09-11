@@ -46,6 +46,10 @@ def create_app(test_config: dict | None = None) -> Flask:
         except (ValueError, TypeError):
             return []
 
+    from .richtext import render_markdown
+
+    app.add_template_filter(render_markdown, name="markdown")
+
     from . import db
 
     with app.app_context():
