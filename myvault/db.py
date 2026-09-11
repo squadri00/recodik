@@ -12,10 +12,36 @@ import sqlite3
 
 from flask import current_app, g
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
-# Future schema bumps: {from_version: callable(sqlite3.Connection) -> None}
-MIGRATIONS: dict[int, "callable"] = {}
+
+def _migrate_1_to_2(conn: sqlite3.Connection) -> None:
+    """v3: encrypted file/image attachments (a new `files` table)."""
+    conn.executescript(
+        """
+        CREATE TABLE files (
+          id           INTEGER PRIMARY KEY AUTOINCREMENT,
+          record_id    INTEGER NOT NULL,
+          field_key    TEXT NOT NULL,
+          filename     TEXT NOT NULL,
+          content_type TEXT NOT NULL,
+          size_bytes   INTEGER NOT NULL,
+          data         BLOB NOT NULL,   -- Fernet-encrypted file bytes
+          uploaded_by  INTEGER,
+          uploaded_at  TEXT NOT NULL,
+          FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE,
+          FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
+        );
+        CREATE INDEX idx_files_record ON files(record_id, field_key);
+        """
+    )
+
+
+# {from_version: callable(sqlite3.Connection) -> None} -- applied in order,
+# each bumping meta.schema_version by one, until SCHEMA_VERSION is reached.
+MIGRATIONS: dict[int, "callable"] = {
+    1: _migrate_1_to_2,
+}
 
 
 def get_db() -> sqlite3.Connection:

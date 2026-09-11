@@ -92,3 +92,19 @@ def encrypt_with(key: bytes, plaintext: str) -> str:
 
 def decrypt_with(key: bytes, token: str) -> str:
     return Fernet(key).decrypt(token.encode("ascii")).decode("utf-8")
+
+
+# --- binary (file) encryption ---------------------------------------------
+# Same key, but operates on raw bytes with no utf-8 round-trip -- used for
+# uploaded file/image content stored as a BLOB (v3).
+
+def encrypt_bytes(data: bytes) -> bytes:
+    if _master_key is None:
+        raise VaultLocked("Vault is locked")
+    return Fernet(_master_key).encrypt(data)
+
+
+def decrypt_bytes(token: bytes) -> bytes:
+    if _master_key is None:
+        raise VaultLocked("Vault is locked")
+    return Fernet(_master_key).decrypt(token)

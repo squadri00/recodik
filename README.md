@@ -3,7 +3,7 @@
 A self-hosted, no-code, fully customizable record keeper. You define your own
 **categories** (like tables) and, for each, your own **fields**, field types, and
 order. Nothing about the categories or fields is hardcoded — the app ships only
-the engine. Password-type fields are **encrypted at rest**.
+the engine. Password-type fields and uploaded files are **encrypted at rest**.
 
 - No third-party services. No telemetry. No analytics. No outbound calls of any kind.
 - Two deployment targets from one codebase:
@@ -16,12 +16,13 @@ the engine. Password-type fields are **encrypted at rest**.
 |---|---|
 | First-run setup | Create the first admin + a master password (derives the encryption key). |
 | Categories | Create / rename / delete / reorder; emoji icon; admin-only. |
-| Field builder | Per category: add / edit / remove / reorder fields. 12 field types. |
-| Field types | text, textarea, password (encrypted), url, email, number, date, dropdown, multi-select, **linked record**, checkbox, code. |
+| Field builder | Per category: add / edit / remove / reorder fields. 13 field types. |
+| Field types | text, textarea, password (encrypted), url, email, number, date, dropdown, multi-select, **linked record**, **file**, checkbox, code. |
 | Linked records (v2) | A `link` field points each record at one record in another category; renders as a dropdown of that category's records and a clickable link. The target record's detail page lists everything that references it. |
+| File attachments (v3) | A `file` field uploads one image or document per record, encrypted at rest in the same `.sqlite3` file (no separate folder to back up). Images preview inline; everything else downloads. Content requires the vault unlocked; filename/size stay visible either way. |
 | Records | Dynamic form per category; list + detail views; any signed-in user can edit. |
-| Encryption | `password` fields are Fernet-encrypted; decrypted only on an explicit **Reveal**. |
-| Search | FTS5 global search across every category; encrypted values are never indexed. |
+| Encryption | `password` values and `file` bytes are Fernet-encrypted; decrypted only on an explicit **Reveal** / **Download**. |
+| Search | FTS5 global search across every category; encrypted values and file contents are never indexed (filenames are). |
 | Templates | Export a category's field definitions to JSON; import to re-create it elsewhere. |
 | Users | Admin manages members; members edit records but can't restructure categories. |
 
@@ -29,6 +30,12 @@ Relational / linked-record fields shipped in **v2** as the `link` field type
 (above). Use it to model hierarchies — e.g. one customer, many projects, each
 project many sub-projects: a `link` on Projects points at Customers, a `link` on
 Sub-projects points at Projects (or at Projects itself for a self-nested tree).
+
+**File attachments (v3):** each upload is capped at 15 MB by default (raise it
+with the `MYVAULT_MAX_FILE_MB` env var; also bump `MYVAULT_MAX_UPLOAD_MB`, the
+whole-request cap, to match). Existing v1/v2 databases upgrade automatically —
+on first start after updating, MyVault adds the `files` table in place; no
+manual migration step.
 
 ---
 
@@ -134,8 +141,10 @@ python tests/run_all.py
 
 They cover: first-run setup / auth / lock-unlock, the category + field builder,
 record CRUD with encryption-at-rest and reveal, FTS search sync, multi-user role
-enforcement, template export/import round-trips, input validation, and a full
-"no plaintext or ciphertext in any rendered view" audit.
+enforcement, template export/import round-trips, input validation, a full
+"no plaintext or ciphertext in any rendered view" audit, linked records, file
+attachments (upload/replace/remove, size caps, inline vs. download, cascade
+delete), and the v1→v2 schema migration on an existing database.
 
 ## Project layout
 
@@ -150,7 +159,7 @@ myvault/            application package (Flask app factory + blueprints)
   search.py         FTS5 index maintenance + search UI
   templates_io.py   category template export / import
   settings.py       user management
-  fieldtypes.py     the 12 field types (11 v1 + link in v2)
+  fieldtypes.py     the 13 field types (11 v1 + link in v2 + file in v3)
   schema.sql        versioned schema (applied on a fresh DB)
   templates/  static/
 run.py              dev server entry
@@ -166,6 +175,10 @@ Dockerfile  docker-compose.yml
 - `password`-type values are encrypted before they touch the database and are
   returned in plaintext only by `POST /records/<id>/reveal`, one field at a time,
   and only while the vault is unlocked.
+- `file`-type uploads are encrypted before they touch the database and are
+  decrypted only by `GET /records/files/<id>/download`, while the vault is
+  unlocked; SVG uploads are never rendered inline (a `<script>` inside one
+  can't run in the app's origin).
 - Session cookies are `HttpOnly` + `SameSite=Lax`; the signing key is stored in
   the database and persists across restarts.
 - The master key is never written to disk or placed in a cookie.

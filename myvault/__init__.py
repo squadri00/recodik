@@ -9,7 +9,7 @@ import os
 
 from flask import Flask, g, redirect, render_template, url_for
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 def create_app(test_config: dict | None = None) -> Flask:
@@ -21,7 +21,9 @@ def create_app(test_config: dict | None = None) -> Flask:
         ),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
-        MAX_CONTENT_LENGTH=8 * 1024 * 1024,
+        # Whole-request cap; must comfortably exceed records.MAX_FILE_SIZE
+        # (one uploaded file) plus form overhead.
+        MAX_CONTENT_LENGTH=int(os.environ.get("MYVAULT_MAX_UPLOAD_MB", "20")) * 1024 * 1024,
     )
     if test_config:
         app.config.update(test_config)
@@ -98,12 +100,14 @@ def create_app(test_config: dict | None = None) -> Flask:
         except Exception:
             pass
         from . import crypto
+        from .records import MAX_FILE_SIZE
 
         return {
             "app_title": title,
             "current_user": g.get("user"),
             "vault_unlocked": crypto.is_unlocked(),
             "app_version": __version__,
+            "max_file_mb": MAX_FILE_SIZE // (1024 * 1024),
         }
 
     @app.errorhandler(403)
@@ -118,8 +122,9 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     @app.errorhandler(413)
     def too_large(_e):
+        limit_mb = app.config["MAX_CONTENT_LENGTH"] // (1024 * 1024)
         return render_template("error.html", code=413,
-                               message="That upload is too large."), 413
+                               message=f"That upload is too large (limit {limit_mb} MB)."), 413
 
     @app.errorhandler(500)
     def server_error(_e):

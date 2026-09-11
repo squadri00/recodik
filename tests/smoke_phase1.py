@@ -89,11 +89,11 @@ import sqlite3
 conn = sqlite3.connect(db_path)
 tables = {row[0] for row in conn.execute(
     "SELECT name FROM sqlite_master WHERE type='table'")}
-assert {"meta", "users", "categories", "fields", "records", "records_fts"} <= tables, tables
+assert {"meta", "users", "categories", "fields", "records", "records_fts", "files"} <= tables, tables
 ver = conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0]
-assert ver == "1"
+assert ver == "2"
 salt = conn.execute("SELECT value FROM meta WHERE key='kdf_salt'").fetchone()[0]
 assert salt and "masterpw" not in open(db_path, "rb").read().decode("latin-1")
-print("OK  schema created, version=1, master password not present in db file")
+print("OK  schema created (incl. v2 `files` table), master password not present in db file")
 
 print("\nPhase 1 smoke test: ALL PASSED")

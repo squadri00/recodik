@@ -27,6 +27,7 @@ FIELD_TYPES: dict[str, dict] = {
     "link":        {"label": "Linked record",       "options": False, "encrypted": False, "target": True},
     "checkbox":    {"label": "Checkbox",            "options": False, "encrypted": False, "target": False},
     "code":        {"label": "Code (monospace)",    "options": False, "encrypted": False, "target": False},
+    "file":        {"label": "File (image or document)", "options": False, "encrypted": True, "target": False},
 }
 
 FIELD_TYPE_ORDER: list[str] = list(FIELD_TYPES)

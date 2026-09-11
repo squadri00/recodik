@@ -4,7 +4,7 @@
 <h1>{{ category['icon'] or '📁' }} {{ 'Edit record' if mode == 'edit' else 'New record' }} — {{ category['name'] }}</h1>
 
 <div class="card" style="max-width:640px">
-<form method="post" data-reveal-form>
+<form method="post" enctype="multipart/form-data" data-reveal-form>
   {% for f in fields %}
     {% set val = values.get(f['field_key']) %}
     {% set has_saved = mode == 'edit' and existing is defined and existing.get(f['field_key']) %}
@@ -64,6 +64,22 @@
         {% if not choices %}
           <span class="hint">No records to link to yet — add some in the target category first,
           or an admin still needs to set this field's target.</span>
+        {% endif %}
+
+      {% elif f['field_type'] == 'file' %}
+        {% set current = file_meta.get(f['field_key']) %}
+        <input id="fld-{{ f['field_key'] }}" type="file" name="{{ f['field_key'] }}"
+               {{ 'required' if f['required'] and not current }}>
+        {% if current %}
+          <span class="hint">
+            Current: {{ current['filename'] }} ({{ (current['size_bytes'] / 1024) | round(1) }} KB).
+            Choose a new file to replace it, or
+            <label class="check" style="display:inline-flex">
+              <input type="checkbox" name="{{ f['field_key'] }}__remove" value="1"> remove it
+            </label>.
+          </span>
+        {% else %}
+          <span class="hint">Up to {{ max_file_mb }} MB.</span>
         {% endif %}
 
       {% elif f['field_type'] == 'checkbox' %}

@@ -1,5 +1,18 @@
 {#- one record value. `cell` + `rec` in context. Never emits ciphertext. -#}
-{%- if cell['encrypted'] -%}
+{%- if cell['type'] == 'file' -%}
+  {%- if cell['file'] -%}
+    {%- if not vault_unlocked -%}
+      <span class="muted">🔒 {{ cell['file']['filename'] }}</span>
+    {%- elif cell['file']['inline'] -%}
+      <a href="{{ url_for('records.download_file', file_id=cell['file']['id']) }}" target="_blank" rel="noopener noreferrer">
+        <img class="file-thumb" src="{{ url_for('records.download_file', file_id=cell['file']['id']) }}" alt="{{ cell['file']['filename'] }}">
+      </a>
+    {%- else -%}
+      <a href="{{ url_for('records.download_file', file_id=cell['file']['id']) }}">📄 {{ cell['file']['filename'] }}</a>
+      <span class="muted">({{ (cell['file']['size_bytes'] / 1024) | round(1) }} KB)</span>
+    {%- endif -%}
+  {%- else -%}<span class="muted">—</span>{%- endif -%}
+{%- elif cell['encrypted'] -%}
   {%- if cell['has_value'] -%}
     <span class="masked">••••••••</span>
     <button type="button" class="linkbtn" data-reveal

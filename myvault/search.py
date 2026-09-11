@@ -21,16 +21,20 @@ from flask import (
 
 from .auth import admin_required, login_required
 from .db import get_db
-from .fieldtypes import is_encrypted
 from .store import record_label
 
 bp = Blueprint("search", __name__)
+
+# `password` ciphertext is never indexed, and there's nothing meaningful to
+# resolve it to. `link`/`file` are also sensitive-ish but get resolved to a
+# plain label/filename by _resolve_links / _resolve_files before this runs.
+_NEVER_INDEXED = {"password"}
 
 
 def record_search_text(fields, data: dict) -> str:
     parts: list[str] = []
     for f in fields:
-        if is_encrypted(f["field_type"]):
+        if f["field_type"] in _NEVER_INDEXED:
             continue
         value = data.get(f["field_key"])
         if value is None or value == "":
@@ -66,6 +70,24 @@ def _resolve_links(db: sqlite3.Connection, fields, data: dict) -> dict:
     return aug
 
 
+def _resolve_files(db: sqlite3.Connection, fields, data: dict) -> dict:
+    """Replace `file` field ids with the stored filename, so `invoice.pdf` is
+    findable by name -- file *content* is never indexed."""
+    aug = dict(data)
+    for f in fields:
+        if f["field_type"] != "file":
+            continue
+        key = f["field_key"]
+        fid = data.get(key)
+        aug[key] = ""
+        if not fid:
+            continue
+        row = db.execute("SELECT filename FROM files WHERE id = ?", (int(fid),)).fetchone()
+        if row is not None:
+            aug[key] = row["filename"]
+    return aug
+
+
 def reindex_record(db: sqlite3.Connection, record_id: int) -> None:
     db.execute("DELETE FROM records_fts WHERE record_id = ?", (record_id,))
     row = db.execute(
@@ -78,7 +100,9 @@ def reindex_record(db: sqlite3.Connection, record_id: int) -> None:
     fields = db.execute(
         "SELECT * FROM fields WHERE category_id = ?", (row["category_id"],)
     ).fetchall()
-    data = _resolve_links(db, fields, json.loads(row["data"] or "{}"))
+    data = json.loads(row["data"] or "{}")
+    data = _resolve_links(db, fields, data)
+    data = _resolve_files(db, fields, data)
     text = record_search_text(fields, data)
     db.execute(
         "INSERT INTO records_fts(record_id, category_id, category_name, content) "

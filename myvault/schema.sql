@@ -1,5 +1,6 @@
--- MyVault schema v1
+-- MyVault schema (current: v2)
 -- Applied once on a fresh database. Versioned via meta.value where key='schema_version'.
+-- An existing v1 database is upgraded in place by myvault/db.py's MIGRATIONS instead.
 
 PRAGMA foreign_keys = ON;
 
@@ -50,8 +51,23 @@ CREATE TABLE records (
   FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
+CREATE TABLE files (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  record_id    INTEGER NOT NULL,
+  field_key    TEXT NOT NULL,
+  filename     TEXT NOT NULL,
+  content_type TEXT NOT NULL,
+  size_bytes   INTEGER NOT NULL,
+  data         BLOB NOT NULL,   -- Fernet-encrypted file bytes (v3: the `file` field type)
+  uploaded_by  INTEGER,
+  uploaded_at  TEXT NOT NULL,
+  FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE,
+  FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
 CREATE INDEX idx_fields_category ON fields(category_id, sort_order);
 CREATE INDEX idx_records_category ON records(category_id, updated_at);
+CREATE INDEX idx_files_record ON files(record_id, field_key);
 
 -- Global full-text search. Content is rebuilt from records.data + categories.name
 -- on every record insert/update/delete (see myvault/search.py).

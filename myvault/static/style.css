@@ -195,6 +195,12 @@ thead .sticky-col { z-index: 1; }
 .reflist li { font-size: .92rem; }
 .reflist .muted { font-size: .85rem; }
 
+.file-thumb {
+  display: block; max-width: 64px; max-height: 64px; width: auto; height: auto;
+  border-radius: 6px; border: 1px solid var(--border); object-fit: cover;
+}
+.detail .file-thumb { max-width: 220px; max-height: 220px; }
+
 /* --- search --- */
 .searchbar { display: flex; gap: .6rem; margin: 1rem 0 1.5rem; }
 .searchbar input { flex: 1; }

@@ -5,18 +5,22 @@ Any authenticated user can add/edit/delete records. Restructuring the category
 
 Encryption contract:
 * ``password``-type values are encrypted with Fernet before insert/update.
-* Plaintext is returned ONLY by the explicit ``/reveal`` endpoint, one field at
-  a time, and only while the vault is unlocked.
+* ``file``-type values are stored as an id into the `files` table, whose bytes
+  are Fernet-encrypted (v3); metadata (filename/size/type) stays plain.
+* Plaintext / file bytes are returned ONLY by the explicit ``/reveal`` and
+  ``/files/<id>/download`` endpoints, and only while the vault is unlocked.
 * List and detail views never emit the ciphertext or the plaintext.
 """
 
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime
 
 from flask import (
     Blueprint,
+    Response,
     abort,
     flash,
     g,
@@ -26,6 +30,7 @@ from flask import (
     request,
     url_for,
 )
+from werkzeug.utils import secure_filename
 
 from . import crypto, search
 from .auth import login_required
@@ -44,6 +49,15 @@ from .util import now_iso
 bp = Blueprint("records", __name__, url_prefix="/records")
 
 MASK = "••••••••"
+
+# Per-file cap for the `file` field type. Everything lives as a BLOB in the
+# single myvault.sqlite3 file, so this is deliberately conservative -- it's
+# built for documents, scans and photos, not a media library.
+MAX_FILE_SIZE = int(os.environ.get("MYVAULT_MAX_FILE_MB", "15")) * 1024 * 1024
+
+# Rendered as an inline <img> thumbnail. Anything else (including SVG, which
+# can carry a <script>) is served as a download instead of inline HTML.
+INLINE_IMAGE_TYPES = {"image/png", "image/jpeg", "image/gif", "image/webp"}
 
 
 def _category_or_404(category_id: int):
@@ -68,21 +82,54 @@ def _has_encrypted_field(fields) -> bool:
 
 # --- form parsing / validation ------------------------------------------------
 
-def parse_form(fields, form, existing: dict | None) -> tuple[dict, list[str]]:
-    """Build the record's data dict from submitted form values.
+def parse_form(fields, form, files, existing: dict | None) -> tuple[dict, list[str], dict]:
+    """Build the record's data dict from submitted form + file values.
 
     For encrypted fields: a non-empty value is encrypted now; an empty value
     keeps the existing ciphertext (edit) or is omitted (create).
+
+    Returns (data, errors, pending_files). `pending_files` maps field_key ->
+    (raw_bytes, filename, content_type) for newly uploaded files -- the caller
+    inserts these into the `files` table once it knows the record's id, then
+    patches data[key] with the resulting file id (see _save_pending_files).
     """
     existing = existing or {}
     data: dict = {}
     errors: list[str] = []
+    pending: dict = {}
 
     for f in fields:
         key, ftype = f["field_key"], f["field_type"]
 
         if ftype == "checkbox":
             data[key] = bool(form.get(key))
+            continue
+
+        if ftype == "file":
+            upload = files.get(key)
+            remove = bool(form.get(key + "__remove"))
+            if upload is not None and upload.filename:
+                blob = upload.read()
+                if len(blob) > MAX_FILE_SIZE:
+                    errors.append(
+                        f"“{f['label']}” is larger than {MAX_FILE_SIZE // (1024 * 1024)} MB."
+                    )
+                elif not blob:
+                    errors.append(f"“{f['label']}”: that file is empty.")
+                else:
+                    pending[key] = (
+                        blob,
+                        secure_filename(upload.filename) or "file",
+                        upload.mimetype or "application/octet-stream",
+                    )
+            elif remove:
+                data[key] = ""
+            elif existing.get(key):
+                data[key] = existing[key]  # keep the current file
+            elif f["required"]:
+                errors.append(f"“{f['label']}” is required.")
+            else:
+                data[key] = ""
             continue
 
         if ftype == "multiselect":
@@ -142,7 +189,31 @@ def parse_form(fields, form, existing: dict | None) -> tuple[dict, list[str]]:
         else:
             data[key] = raw
 
-    return data, errors
+    return data, errors, pending
+
+
+def _save_pending_files(db, record_id: int, data: dict, pending: dict) -> None:
+    """Insert newly uploaded files and patch data[key] with each new file id."""
+    for key, (blob, filename, content_type) in pending.items():
+        token = crypto.encrypt_bytes(blob)
+        cur = db.execute(
+            "INSERT INTO files(record_id, field_key, filename, content_type, "
+            "size_bytes, data, uploaded_by, uploaded_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?)",
+            (record_id, key, filename, content_type, len(blob), token,
+             g.user["id"], now_iso()),
+        )
+        data[key] = cur.lastrowid
+
+
+def _drop_superseded_files(db, existing: dict, data: dict, fields) -> None:
+    """Delete the old `files` row for any file field that was replaced or removed."""
+    for f in fields:
+        if f["field_type"] != "file":
+            continue
+        old = existing.get(f["field_key"])
+        new = data.get(f["field_key"])
+        if isinstance(old, int) and old != new:
+            db.execute("DELETE FROM files WHERE id = ?", (old,))
 
 
 # --- display helpers --------------------------------------------------------
@@ -153,8 +224,18 @@ def display_cell(field, data: dict) -> dict:
     value = data.get(key)
     cell = {"type": ftype, "label": field["label"], "key": key,
             "encrypted": is_encrypted(ftype), "has_value": False, "raw": None,
-            "items": None, "checked": False, "link": None}
-    if is_encrypted(ftype):
+            "items": None, "checked": False, "link": None, "file": None}
+    if ftype == "file":
+        file_row = get_db().execute(
+            "SELECT id, filename, content_type, size_bytes FROM files WHERE id = ?",
+            (int(value),),
+        ).fetchone() if value else None
+        cell["file"] = dict(file_row) if file_row else None
+        if cell["file"] is not None:
+            cell["file"]["inline"] = cell["file"]["content_type"] in INLINE_IMAGE_TYPES
+        cell["has_value"] = cell["file"] is not None
+        return cell
+    if ftype == "password":
         cell["has_value"] = bool(value)
         return cell
     if ftype == "link":
@@ -214,6 +295,15 @@ def link_options_for(fields) -> dict:
     }
 
 
+def file_meta_for(fields, data: dict) -> dict:
+    """field_key -> {id, filename, content_type, size_bytes, inline} for the
+    form's `file` fields, so the edit page can show what's currently attached."""
+    return {
+        f["field_key"]: display_cell(f, data)["file"]
+        for f in fields if f["field_type"] == "file"
+    }
+
+
 # --- routes ---------------------------------------------------------------
 
 @bp.route("/category/<int:category_id>")
@@ -242,7 +332,7 @@ def create(category_id: int):
         return redirect(url_for("auth.unlock", next=request.path))
 
     if request.method == "POST":
-        data, errors = parse_form(fields, request.form, None)
+        data, errors, pending = parse_form(fields, request.form, request.files, None)
         if errors:
             for e in errors:
                 flash(e, "error")
@@ -250,6 +340,7 @@ def create(category_id: int):
                                    fields=fields,
                                    values=form_values(fields, request.form, True),
                                    link_options=link_options_for(fields),
+                                   file_meta=file_meta_for(fields, {}),
                                    mode="new")
         db = get_db()
         cur = db.execute(
@@ -257,14 +348,20 @@ def create(category_id: int):
             "VALUES(?, ?, ?, ?, ?)",
             (category_id, json.dumps(data), g.user["id"], now_iso(), now_iso()),
         )
-        search.reindex_record(db, cur.lastrowid)
+        record_id = cur.lastrowid
+        if pending:
+            _save_pending_files(db, record_id, data, pending)
+            db.execute("UPDATE records SET data = ? WHERE id = ?",
+                       (json.dumps(data), record_id))
+        search.reindex_record(db, record_id)
         db.commit()
         flash("Record added.", "success")
         return redirect(url_for("records.list_records", category_id=category_id))
 
     return render_template("record_form.html", category=category, fields=fields,
                            values=form_values(fields, {}, False),
-                           link_options=link_options_for(fields), mode="new")
+                           link_options=link_options_for(fields),
+                           file_meta=file_meta_for(fields, {}), mode="new")
 
 
 @bp.route("/<int:record_id>")
@@ -289,7 +386,7 @@ def edit(record_id: int):
         return redirect(url_for("auth.unlock", next=request.path))
 
     if request.method == "POST":
-        data, errors = parse_form(fields, request.form, existing)
+        data, errors, pending = parse_form(fields, request.form, request.files, existing)
         if errors:
             for e in errors:
                 flash(e, "error")
@@ -297,9 +394,13 @@ def edit(record_id: int):
                                    fields=fields,
                                    values=form_values(fields, request.form, True),
                                    link_options=link_options_for(fields),
+                                   file_meta=file_meta_for(fields, existing),
                                    mode="edit", record_id=record_id,
                                    existing=existing)
         db = get_db()
+        if pending:
+            _save_pending_files(db, record_id, data, pending)
+        _drop_superseded_files(db, existing, data, fields)
         db.execute(
             "UPDATE records SET data = ?, updated_at = ? WHERE id = ?",
             (json.dumps(data), now_iso(), record_id),
@@ -312,7 +413,8 @@ def edit(record_id: int):
     # Pre-fill: encrypted fields are shown blank (never decrypted into HTML).
     return render_template("record_form.html", category=category, fields=fields,
                            values=form_values(fields, existing, False),
-                           link_options=link_options_for(fields), mode="edit",
+                           link_options=link_options_for(fields),
+                           file_meta=file_meta_for(fields, existing), mode="edit",
                            record_id=record_id, existing=existing)
 
 
@@ -340,7 +442,9 @@ def reveal(record_id: int):
     field_key = (request.form.get("field_key") or "").strip()
     fields = {f["field_key"]: f for f in get_fields(record["category_id"])}
     field = fields.get(field_key)
-    if field is None or not is_encrypted(field["field_type"]):
+    # `file` fields are also `is_encrypted` but go through /files/<id>/download
+    # (binary, not JSON) -- only `password` reveals through this endpoint.
+    if field is None or field["field_type"] != "password":
         abort(404)
     if not crypto.is_unlocked():
         return jsonify({"error": "Vault is locked. Unlock it to reveal values."}), 409
@@ -354,3 +458,32 @@ def reveal(record_id: int):
         return jsonify({"error": "Vault is locked."}), 409
     except Exception:
         return jsonify({"error": "Could not decrypt this value."}), 500
+
+
+@bp.route("/files/<int:file_id>/download")
+@login_required
+def download_file(file_id: int):
+    """Decrypt and stream one uploaded file. Requires the vault unlocked.
+
+    GET (not POST) deliberately -- this is what lets an <img> tag preview an
+    image inline. Still gated by login + unlock; never cached by the browser.
+    """
+    row = get_db().execute("SELECT * FROM files WHERE id = ?", (file_id,)).fetchone()
+    if row is None:
+        abort(404)
+    if not crypto.is_unlocked():
+        abort(403)
+    try:
+        plaintext = crypto.decrypt_bytes(row["data"])
+    except crypto.VaultLocked:
+        abort(403)
+    except Exception:
+        abort(500)
+
+    disposition = "inline" if row["content_type"] in INLINE_IMAGE_TYPES else "attachment"
+    safe_name = row["filename"].replace('"', "")
+    resp = Response(plaintext, mimetype=row["content_type"])
+    resp.headers["Content-Disposition"] = f'{disposition}; filename="{safe_name}"'
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
