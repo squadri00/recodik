@@ -6,6 +6,10 @@
   <div class="row-actions">
     <a class="btn btn-primary" href="{{ url_for('records.edit', record_id=record['id']) }}">Edit</a>
     <a class="btn btn-ghost" href="{{ url_for('records.list_records', category_id=category['id']) }}">Back to list</a>
+    <form method="post" action="{{ url_for('records.delete', record_id=record['id']) }}"
+          onsubmit="return confirm('Delete this record? This cannot be undone.');">
+      <button class="btn btn-danger" type="submit">Delete</button>
+    </form>
   </div>
 </div>
 
@@ -13,7 +17,7 @@
   <dl class="detail">
     {% for cell in record['cells'] %}
       <dt>{{ cell['label'] }}</dt>
-      <dd>{% set rec = record %}{% include "_cell.html" %}</dd>
+      <dd>{% set rec = record %}{% set detail = true %}{% include "_cell.html" %}</dd>
     {% endfor %}
   </dl>
   <p class="muted" style="margin-top:1rem">Last updated {{ record['updated_at'] }}</p>
