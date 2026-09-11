@@ -12,6 +12,10 @@
   {{ '✓' if cell['checked'] else '—' }}
 {%- elif cell['type'] == 'multiselect' -%}
   {%- if cell['items'] -%}{{ cell['items'] | join(', ') }}{%- else -%}<span class="muted">—</span>{%- endif -%}
+{%- elif cell['type'] == 'link' -%}
+  {%- if cell['link'] -%}
+    <a href="{{ url_for('records.view', record_id=cell['link']['id']) }}">{{ cell['link']['label'] }}</a>
+  {%- else -%}<span class="muted">—</span>{%- endif -%}
 {%- elif not cell['has_value'] -%}
   <span class="muted">—</span>
 {%- elif cell['type'] == 'url' -%}

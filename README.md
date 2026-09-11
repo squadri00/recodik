@@ -16,16 +16,19 @@ the engine. Password-type fields are **encrypted at rest**.
 |---|---|
 | First-run setup | Create the first admin + a master password (derives the encryption key). |
 | Categories | Create / rename / delete / reorder; emoji icon; admin-only. |
-| Field builder | Per category: add / edit / remove / reorder fields. 11 field types. |
-| Field types | text, textarea, password (encrypted), url, email, number, date, dropdown, multi-select, checkbox, code. |
+| Field builder | Per category: add / edit / remove / reorder fields. 12 field types. |
+| Field types | text, textarea, password (encrypted), url, email, number, date, dropdown, multi-select, **linked record**, checkbox, code. |
+| Linked records (v2) | A `link` field points each record at one record in another category; renders as a dropdown of that category's records and a clickable link. The target record's detail page lists everything that references it. |
 | Records | Dynamic form per category; list + detail views; any signed-in user can edit. |
 | Encryption | `password` fields are Fernet-encrypted; decrypted only on an explicit **Reveal**. |
 | Search | FTS5 global search across every category; encrypted values are never indexed. |
 | Templates | Export a category's field definitions to JSON; import to re-create it elsewhere. |
 | Users | Admin manages members; members edit records but can't restructure categories. |
 
-Relational / linked-record fields (a field pointing at a record in another
-category) are **not** in v1 — a candidate for v2.
+Relational / linked-record fields shipped in **v2** as the `link` field type
+(above). Use it to model hierarchies — e.g. one customer, many projects, each
+project many sub-projects: a `link` on Projects points at Customers, a `link` on
+Sub-projects points at Projects (or at Projects itself for a self-nested tree).
 
 ---
 
@@ -147,7 +150,7 @@ myvault/            application package (Flask app factory + blueprints)
   search.py         FTS5 index maintenance + search UI
   templates_io.py   category template export / import
   settings.py       user management
-  fieldtypes.py     the 11 v1 field types
+  fieldtypes.py     the 12 field types (11 v1 + link in v2)
   schema.sql        versioned schema (applied on a fresh DB)
   templates/  static/
 run.py              dev server entry

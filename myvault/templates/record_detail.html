@@ -18,4 +18,18 @@
   </dl>
   <p class="muted" style="margin-top:1rem">Last updated {{ record['updated_at'] }}</p>
 </div>
+
+{% if referenced_by %}
+<div class="card" style="margin-top:1.25rem">
+  <h2>Referenced by</h2>
+  <ul class="reflist">
+    {% for r in referenced_by %}
+      <li>
+        <a href="{{ url_for('records.view', record_id=r['id']) }}">{{ r['label'] }}</a>
+        <span class="muted">— {{ r['category_name'] }} · via {{ r['via'] }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
 {% endblock %}

@@ -21,8 +21,15 @@ from flask import (
 
 from .auth import admin_required
 from .db import get_db
-from .fieldtypes import FIELD_TYPES, is_valid_type, needs_options
-from .store import get_categories, get_category, get_field, get_fields, move_row
+from .fieldtypes import FIELD_TYPES, is_valid_type, needs_options, needs_target
+from .store import (
+    get_categories,
+    get_category,
+    get_field,
+    get_fields,
+    link_target_id,
+    move_row,
+)
 from .util import now_iso, slugify_key, uniquify_key
 
 bp = Blueprint("categories", __name__, url_prefix="/categories")
@@ -41,6 +48,22 @@ def _parse_options(raw: str) -> list[str]:
             seen.add(v)
             out.append(v)
     return out
+
+
+def _options_json(ftype: str, options: list[str], target_id: int | None) -> str:
+    """The value for fields.options given the field type."""
+    if needs_target(ftype):
+        return json.dumps({"category_id": int(target_id)}) if target_id else "{}"
+    if needs_options(ftype):
+        return json.dumps(options)
+    return "[]"
+
+
+def _target_from_form() -> int | None:
+    raw = (request.form.get("target_category_id") or "").strip()
+    if not raw.isdigit():
+        return None
+    return int(raw) if get_category(int(raw)) is not None else None
 
 
 # --- category CRUD ---------------------------------------------------------
@@ -80,11 +103,15 @@ def edit(category_id: int):
     category = get_category(category_id)
     if category is None:
         abort(404)
+    fields = get_fields(category_id)
     return render_template(
         "category_edit.html",
         category=category,
-        fields=get_fields(category_id),
+        fields=fields,
         field_types=FIELD_TYPES,
+        all_categories=get_categories(),
+        link_targets={f["id"]: link_target_id(f) for f in fields
+                      if f["field_type"] == "link"},
     )
 
 
@@ -118,6 +145,24 @@ def delete(category_id: int):
     if category is None:
         abort(404)
     db = get_db()
+
+    # Block deletion while other categories link to this one.
+    blockers = []
+    for lf in db.execute(
+        "SELECT f.label, f.options, c.name AS cat FROM fields f "
+        "JOIN categories c ON c.id = f.category_id "
+        "WHERE f.field_type = 'link' AND f.category_id != ?", (category_id,)
+    ).fetchall():
+        if link_target_id(lf) == category_id:
+            blockers.append(f"“{lf['label']}” in {lf['cat']}")
+    if blockers:
+        flash(
+            "Can't delete this category — these linked-record fields point at it: "
+            + "; ".join(blockers) + ". Remove or retarget them first.",
+            "error",
+        )
+        return redirect(url_for("categories.edit", category_id=category_id))
+
     db.execute("DELETE FROM categories WHERE id = ?", (category_id,))
     db.execute("DELETE FROM records_fts WHERE category_id = ?", (category_id,))
     db.commit()
@@ -145,9 +190,11 @@ def field_add(category_id: int):
     ftype = request.form.get("field_type", "")
     required = 1 if request.form.get("required") else 0
     options = _parse_options(request.form.get("options", ""))
+    target_id = _target_from_form()
 
     existing = get_fields(category_id)
-    error = _validate_field(label, ftype, options) or _dup_label(label, existing)
+    error = (_validate_field(label, ftype, options, target_id)
+             or _dup_label(label, existing))
     if error:
         flash(error, "error")
         return redirect(url_for("categories.edit", category_id=category_id))
@@ -160,7 +207,7 @@ def field_add(category_id: int):
         "VALUES(?, ?, ?, ?, ?, ?, "
         "(SELECT COALESCE(MAX(sort_order), -1) + 1 FROM fields WHERE category_id = ?))",
         (category_id, label, field_key, ftype,
-         json.dumps(options if needs_options(ftype) else []), required, category_id),
+         _options_json(ftype, options, target_id), required, category_id),
     )
     db.commit()
     flash(f"Added field “{label}”.", "success")
@@ -175,12 +222,18 @@ def field_edit(category_id: int, field_id: int):
     field = get_field(category_id, field_id)
     if field is None:
         abort(404)
+    try:
+        opts = json.loads(field["options"] or "[]")
+    except ValueError:
+        opts = []
     return render_template(
         "field_edit.html",
         category=get_category(category_id),
         field=field,
-        options_text="\n".join(json.loads(field["options"] or "[]")),
+        options_text="\n".join(opts) if isinstance(opts, list) else "",
         field_types=FIELD_TYPES,
+        all_categories=get_categories(),
+        current_target=link_target_id(field),
     )
 
 
@@ -197,9 +250,11 @@ def field_update(category_id: int, field_id: int):
     ftype = request.form.get("field_type", "")
     required = 1 if request.form.get("required") else 0
     options = _parse_options(request.form.get("options", ""))
+    target_id = _target_from_form()
 
     others = [f for f in get_fields(category_id) if f["id"] != field_id]
-    error = _validate_field(label, ftype, options) or _dup_label(label, others)
+    error = (_validate_field(label, ftype, options, target_id)
+             or _dup_label(label, others))
     if error:
         flash(error, "error")
         return redirect(
@@ -211,7 +266,7 @@ def field_update(category_id: int, field_id: int):
     db.execute(
         "UPDATE fields SET label = ?, field_type = ?, options = ?, required = ? "
         "WHERE id = ? AND category_id = ?",
-        (label, ftype, json.dumps(options if needs_options(ftype) else []),
+        (label, ftype, _options_json(ftype, options, target_id),
          required, field_id, category_id),
     )
     db.commit()
@@ -262,7 +317,8 @@ def _dup_label(label: str, existing) -> str | None:
     return None
 
 
-def _validate_field(label: str, ftype: str, options: list[str]) -> str | None:
+def _validate_field(label: str, ftype: str, options: list[str],
+                    target_id: int | None = None) -> str | None:
     if not label:
         return "Field label is required."
     if len(label) > MAX_LABEL:
@@ -271,4 +327,6 @@ def _validate_field(label: str, ftype: str, options: list[str]) -> str | None:
         return "Choose a valid field type."
     if needs_options(ftype) and not options:
         return f"“{FIELD_TYPES[ftype]['label']}” needs at least one option."
+    if needs_target(ftype) and not target_id:
+        return f"“{FIELD_TYPES[ftype]['label']}” needs a target category."
     return None

@@ -22,7 +22,7 @@ from flask import (
 from .auth import admin_required, login_required
 from .db import get_db
 from .fieldtypes import is_encrypted
-from .store import get_categories
+from .store import record_label
 
 bp = Blueprint("search", __name__)
 
@@ -45,6 +45,27 @@ def record_search_text(fields, data: dict) -> str:
     return "  ".join(p for p in parts if p)
 
 
+def _resolve_links(db: sqlite3.Connection, fields, data: dict) -> dict:
+    """Replace `link` field ids with the linked record's label, so a search for
+    the parent's name finds this record. Unresolvable links become empty."""
+    aug = dict(data)
+    for f in fields:
+        if f["field_type"] != "link":
+            continue
+        key = f["field_key"]
+        rid = data.get(key)
+        aug[key] = ""
+        if not rid:
+            continue
+        tgt = db.execute(
+            "SELECT category_id, data FROM records WHERE id = ?", (int(rid),)
+        ).fetchone()
+        if tgt is not None:
+            aug[key] = record_label(tgt["category_id"],
+                                    json.loads(tgt["data"] or "{}")) or ""
+    return aug
+
+
 def reindex_record(db: sqlite3.Connection, record_id: int) -> None:
     db.execute("DELETE FROM records_fts WHERE record_id = ?", (record_id,))
     row = db.execute(
@@ -57,7 +78,8 @@ def reindex_record(db: sqlite3.Connection, record_id: int) -> None:
     fields = db.execute(
         "SELECT * FROM fields WHERE category_id = ?", (row["category_id"],)
     ).fetchall()
-    text = record_search_text(fields, json.loads(row["data"] or "{}"))
+    data = _resolve_links(db, fields, json.loads(row["data"] or "{}"))
+    text = record_search_text(fields, data)
     db.execute(
         "INSERT INTO records_fts(record_id, category_id, category_name, content) "
         "VALUES(?, ?, ?, ?)",

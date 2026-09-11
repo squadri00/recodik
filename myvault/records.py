@@ -31,7 +31,14 @@ from . import crypto, search
 from .auth import login_required
 from .db import get_db
 from .fieldtypes import is_encrypted
-from .store import get_category, get_fields
+from .store import (
+    get_category,
+    get_fields,
+    link_choices,
+    link_target_id,
+    referencing_records,
+    resolve_link,
+)
 from .util import now_iso
 
 bp = Blueprint("records", __name__, url_prefix="/records")
@@ -104,7 +111,18 @@ def parse_form(fields, form, existing: dict | None) -> tuple[dict, list[str]]:
             data[key] = ""
             continue
 
-        if ftype == "number":
+        if ftype == "link":
+            target = link_target_id(f)
+            ok = get_db().execute(
+                "SELECT 1 FROM records WHERE id = ? AND category_id = ?",
+                (raw, target),
+            ).fetchone() if (raw.isdigit() and target) else None
+            if ok is None:
+                errors.append(f"“{f['label']}” must be an existing record.")
+                data[key] = ""
+            else:
+                data[key] = int(raw)
+        elif ftype == "number":
             try:
                 float(raw)
             except ValueError:
@@ -135,9 +153,13 @@ def display_cell(field, data: dict) -> dict:
     value = data.get(key)
     cell = {"type": ftype, "label": field["label"], "key": key,
             "encrypted": is_encrypted(ftype), "has_value": False, "raw": None,
-            "items": None, "checked": False}
+            "items": None, "checked": False, "link": None}
     if is_encrypted(ftype):
         cell["has_value"] = bool(value)
+        return cell
+    if ftype == "link":
+        cell["link"] = resolve_link(value) if value else None
+        cell["has_value"] = cell["link"] is not None
         return cell
     if ftype == "checkbox":
         cell["checked"] = bool(value)
@@ -184,6 +206,14 @@ def record_view(record, fields) -> dict:
     }
 
 
+def link_options_for(fields) -> dict:
+    """field_key -> [{id, label}] choices for every `link` field in the form."""
+    return {
+        f["field_key"]: link_choices(link_target_id(f))
+        for f in fields if f["field_type"] == "link"
+    }
+
+
 # --- routes ---------------------------------------------------------------
 
 @bp.route("/category/<int:category_id>")
@@ -219,6 +249,7 @@ def create(category_id: int):
             return render_template("record_form.html", category=category,
                                    fields=fields,
                                    values=form_values(fields, request.form, True),
+                                   link_options=link_options_for(fields),
                                    mode="new")
         db = get_db()
         cur = db.execute(
@@ -232,7 +263,8 @@ def create(category_id: int):
         return redirect(url_for("records.list_records", category_id=category_id))
 
     return render_template("record_form.html", category=category, fields=fields,
-                           values=form_values(fields, {}, False), mode="new")
+                           values=form_values(fields, {}, False),
+                           link_options=link_options_for(fields), mode="new")
 
 
 @bp.route("/<int:record_id>")
@@ -242,7 +274,8 @@ def view(record_id: int):
     category = _category_or_404(record["category_id"])
     fields = get_fields(category["id"])
     return render_template("record_detail.html", category=category,
-                           record=record_view(record, fields))
+                           record=record_view(record, fields),
+                           referenced_by=referencing_records(category["id"], record_id))
 
 
 @bp.route("/<int:record_id>/edit", methods=("GET", "POST"))
@@ -263,6 +296,7 @@ def edit(record_id: int):
             return render_template("record_form.html", category=category,
                                    fields=fields,
                                    values=form_values(fields, request.form, True),
+                                   link_options=link_options_for(fields),
                                    mode="edit", record_id=record_id,
                                    existing=existing)
         db = get_db()
@@ -277,7 +311,8 @@ def edit(record_id: int):
 
     # Pre-fill: encrypted fields are shown blank (never decrypted into HTML).
     return render_template("record_form.html", category=category, fields=fields,
-                           values=form_values(fields, existing, False), mode="edit",
+                           values=form_values(fields, existing, False),
+                           link_options=link_options_for(fields), mode="edit",
                            record_id=record_id, existing=existing)
 
 

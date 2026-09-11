@@ -22,8 +22,8 @@ from flask import (
 
 from .auth import admin_required
 from .db import get_db
-from .fieldtypes import FIELD_TYPES, is_valid_type, needs_options
-from .store import get_category, get_fields
+from .fieldtypes import FIELD_TYPES, is_valid_type, needs_options, needs_target
+from .store import get_category, get_fields, link_target_id
 from .util import now_iso, slugify_key, uniquify_key
 
 bp = Blueprint("templates_io", __name__, url_prefix="/templates")
@@ -35,22 +35,34 @@ MAX_NAME = 80
 
 # --- export ---------------------------------------------------------------
 
+def _field_export(f) -> dict:
+    out = {
+        "label": f["label"],
+        "field_key": f["field_key"],
+        "field_type": f["field_type"],
+        "required": bool(f["required"]),
+        "options": [],
+    }
+    if needs_target(f["field_type"]):
+        # portable across installs: reference the target by name, not id
+        tgt = get_category(link_target_id(f))
+        out["target_category"] = tgt["name"] if tgt is not None else None
+    else:
+        try:
+            opts = json.loads(f["options"] or "[]")
+            out["options"] = opts if isinstance(opts, list) else []
+        except ValueError:
+            out["options"] = []
+    return out
+
+
 def build_template(category, fields) -> dict:
     return {
         "myvault_template": TEMPLATE_FORMAT,
         "name": category["name"],
         "icon": category["icon"] or "",
         "exported_at": now_iso(),
-        "fields": [
-            {
-                "label": f["label"],
-                "field_key": f["field_key"],
-                "field_type": f["field_type"],
-                "required": bool(f["required"]),
-                "options": json.loads(f["options"] or "[]"),
-            }
-            for f in fields
-        ],
+        "fields": [_field_export(f) for f in fields],
     }
 
 
@@ -113,6 +125,10 @@ def parse_template(text: str) -> tuple[dict | None, str | None]:
         if needs_options(ftype) and not options:
             return None, f"Field “{label}” ({FIELD_TYPES[ftype]['label']}) needs options."
 
+        target_name = None
+        if needs_target(ftype):
+            target_name = str(rf.get("target_category") or "").strip() or None
+
         key = uniquify_key(slugify_key(label), taken)
         taken.add(key)
         clean.append({
@@ -121,6 +137,7 @@ def parse_template(text: str) -> tuple[dict | None, str | None]:
             "field_type": ftype,
             "required": 1 if rf.get("required") else 0,
             "options": options if needs_options(ftype) else [],
+            "target_name": target_name,
         })
 
     return {"name": name, "icon": icon, "fields": clean}, None
@@ -158,14 +175,33 @@ def import_category():
         (name, tpl["icon"], g.user["id"], now_iso()),
     )
     category_id = cur.lastrowid
+    unresolved = 0
     for order, f in enumerate(tpl["fields"]):
+        if f["field_type"] == "link":
+            tgt = None
+            if f.get("target_name"):
+                if f["target_name"] == name:  # self-reference
+                    tgt = category_id
+                else:
+                    row = db.execute(
+                        "SELECT id FROM categories WHERE name = ?", (f["target_name"],)
+                    ).fetchone()
+                    tgt = row["id"] if row else None
+            opts_json = json.dumps({"category_id": tgt}) if tgt else "{}"
+            if not tgt:
+                unresolved += 1
+        else:
+            opts_json = json.dumps(f["options"])
         db.execute(
             "INSERT INTO fields(category_id, label, field_key, field_type, options, required, sort_order) "
             "VALUES(?, ?, ?, ?, ?, ?, ?)",
             (category_id, f["label"], f["field_key"], f["field_type"],
-             json.dumps(f["options"]), f["required"], order),
+             opts_json, f["required"], order),
         )
     db.commit()
-    flash(f"Imported “{name}” with {len(tpl['fields'])} field(s). Add records to it now.",
-          "success")
+    msg = f"Imported “{name}” with {len(tpl['fields'])} field(s). Add records to it now."
+    if unresolved:
+        msg += (f" Note: {unresolved} linked-record field(s) need a target category "
+                "set — edit them to choose one.")
+    flash(msg, "warn" if unresolved else "success")
     return redirect(url_for("categories.edit", category_id=category_id))

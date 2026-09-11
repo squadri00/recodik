@@ -53,6 +53,19 @@
           {% endfor %}
         </div>
 
+      {% elif f['field_type'] == 'link' %}
+        {% set choices = link_options.get(f['field_key'], []) %}
+        <select id="fld-{{ f['field_key'] }}" name="{{ f['field_key'] }}" {{ 'required' if f['required'] }}>
+          <option value="">— none —</option>
+          {% for opt in choices %}
+            <option value="{{ opt['id'] }}" {{ 'selected' if val == opt['id']|string }}>{{ opt['label'] }}</option>
+          {% endfor %}
+        </select>
+        {% if not choices %}
+          <span class="hint">No records to link to yet — add some in the target category first,
+          or an admin still needs to set this field's target.</span>
+        {% endif %}
+
       {% elif f['field_type'] == 'checkbox' %}
         <label class="check">
           <input type="checkbox" id="fld-{{ f['field_key'] }}" name="{{ f['field_key'] }}" value="1"

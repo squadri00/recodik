@@ -4,11 +4,13 @@
 // --- Field builder: options textarea shows only for option types -------------
 document.querySelectorAll("[data-field-form]").forEach(function (form) {
   var select = form.querySelector("[data-field-type]");
-  var wrap = form.querySelector("[data-options-wrap]");
-  if (!select || !wrap) return;
+  var optionsWrap = form.querySelector("[data-options-wrap]");
+  var targetWrap = form.querySelector("[data-target-wrap]");
+  if (!select) return;
   function sync() {
     var opt = select.options[select.selectedIndex];
-    wrap.hidden = !(opt && opt.dataset.options === "1");
+    if (optionsWrap) optionsWrap.hidden = !(opt && opt.dataset.options === "1");
+    if (targetWrap) targetWrap.hidden = !(opt && opt.dataset.target === "1");
   }
   select.addEventListener("change", sync);
   sync();
