@@ -6,11 +6,13 @@ document.querySelectorAll("[data-field-form]").forEach(function (form) {
   var select = form.querySelector("[data-field-type]");
   var optionsWrap = form.querySelector("[data-options-wrap]");
   var targetWrap = form.querySelector("[data-target-wrap]");
+  var encryptWrap = form.querySelector("[data-encrypt-wrap]");
   if (!select) return;
   function sync() {
     var opt = select.options[select.selectedIndex];
     if (optionsWrap) optionsWrap.hidden = !(opt && opt.dataset.options === "1");
     if (targetWrap) targetWrap.hidden = !(opt && opt.dataset.target === "1");
+    if (encryptWrap) encryptWrap.hidden = !(opt && opt.value === "password");
   }
   select.addEventListener("change", sync);
   sync();

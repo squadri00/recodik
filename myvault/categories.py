@@ -19,6 +19,7 @@ from flask import (
     url_for,
 )
 
+from . import crypto, search
 from .auth import admin_required
 from .db import get_db
 from .fieldtypes import FIELD_TYPES, is_valid_type, needs_options, needs_target
@@ -33,6 +34,11 @@ from .store import (
 from .util import now_iso, slugify_key, uniquify_key
 
 bp = Blueprint("categories", __name__, url_prefix="/categories")
+
+# Field types whose stored value is a plain string, and so can be encrypted in
+# place when an admin switches the type to `password` -- e.g. fixing a field
+# that was built before its data turned out to be sensitive.
+_ENCRYPTABLE_FROM = {"text", "textarea", "url", "email", "number", "date", "code", "dropdown"}
 
 MAX_NAME = 80
 MAX_LABEL = 80
@@ -234,6 +240,7 @@ def field_edit(category_id: int, field_id: int):
         field_types=FIELD_TYPES,
         all_categories=get_categories(),
         current_target=link_target_id(field),
+        can_encrypt=field["field_type"] in _ENCRYPTABLE_FROM,
     )
 
 
@@ -261,6 +268,20 @@ def field_update(category_id: int, field_id: int):
             url_for("categories.field_edit", category_id=category_id, field_id=field_id)
         )
 
+    newly_encrypted = (
+        ftype == "password"
+        and field["field_type"] != "password"
+        and field["field_type"] in _ENCRYPTABLE_FROM
+        and request.form.get("encrypt_existing")
+    )
+    if newly_encrypted and not crypto.is_unlocked():
+        flash("Unlock the vault first — encrypting existing values needs the master key.",
+              "error")
+        return redirect(url_for(
+            "auth.unlock",
+            next=url_for("categories.field_edit", category_id=category_id, field_id=field_id),
+        ))
+
     # field_key stays immutable after creation -- records.data is keyed by it.
     db = get_db()
     db.execute(
@@ -269,8 +290,34 @@ def field_update(category_id: int, field_id: int):
         (label, ftype, _options_json(ftype, options, target_id),
          required, field_id, category_id),
     )
+
+    reencrypted = 0
+    if newly_encrypted:
+        field_key = field["field_key"]
+        for rec in db.execute(
+            "SELECT id, data FROM records WHERE category_id = ?", (category_id,)
+        ).fetchall():
+            data = json.loads(rec["data"] or "{}")
+            value = data.get(field_key)
+            if not isinstance(value, str) or not value:
+                continue
+            try:
+                crypto.decrypt_value(value)
+                continue  # already a valid token for this key -- leave it (idempotent)
+            except Exception:
+                pass
+            data[field_key] = crypto.encrypt_value(value)
+            db.execute("UPDATE records SET data = ? WHERE id = ?",
+                       (json.dumps(data), rec["id"]))
+            search.reindex_record(db, rec["id"])  # drop the old plaintext from the index
+            reencrypted += 1
+
     db.commit()
-    flash(f"Updated field “{label}”.", "success")
+    msg = f"Updated field “{label}”."
+    if newly_encrypted:
+        msg += f" {reencrypted} existing value(s) encrypted." if reencrypted else \
+               " No existing values needed encrypting."
+    flash(msg, "success")
     return redirect(url_for("categories.edit", category_id=category_id))
 
 
