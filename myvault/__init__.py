@@ -9,7 +9,7 @@ import os
 
 from flask import Flask, g, redirect, render_template, url_for
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 
 def create_app(test_config: dict | None = None) -> Flask:

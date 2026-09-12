@@ -27,6 +27,7 @@ the engine. Password-type fields and uploaded files are **encrypted at rest**.
 | Search | FTS5 global search across every category; encrypted values and file contents are never indexed (filenames are). |
 | Templates | Export a category's field definitions to JSON; import to re-create it elsewhere. |
 | Backup & restore (v5) | Settings → download a full, consistent snapshot of the entire vault, or restore one — see [Backups](#backups) below. |
+| Sort & filter (v6) | Click a record-list column header to sort; a filter bar above it narrows by any column (text "contains", or a dropdown for choice/checkbox/linked-record fields). Both are shareable URLs. |
 | Users | Admin manages members; members edit records but can't restructure categories. |
 
 Relational / linked-record fields shipped in **v2** as the `link` field type
