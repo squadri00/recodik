@@ -65,6 +65,23 @@ document.addEventListener("click", function (e) {
     .finally(function () { btn.disabled = false; });
 });
 
+// --- Global quick-add dropdown -----------------------------------------------
+document.querySelectorAll("[data-quickadd-toggle]").forEach(function (btn) {
+  var wrap = btn.closest(".quickadd-wrap");
+  var dropdown = wrap && wrap.querySelector("[data-quickadd-dropdown]");
+  if (!dropdown) return;
+  btn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    dropdown.hidden = !dropdown.hidden;
+  });
+  document.addEventListener("click", function (e) {
+    if (!dropdown.hidden && !wrap.contains(e.target)) dropdown.hidden = true;
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") dropdown.hidden = true;
+  });
+});
+
 // --- Expiry/reminder alert dropdown -----------------------------------------
 document.querySelectorAll("[data-alert-toggle]").forEach(function (btn) {
   var wrap = btn.closest(".alert-badge-wrap");

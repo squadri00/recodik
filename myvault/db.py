@@ -12,7 +12,7 @@ import sqlite3
 
 from flask import current_app, g
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 def _migrate_1_to_2(conn: sqlite3.Connection) -> None:
@@ -57,11 +57,43 @@ def _migrate_2_to_3(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migrate_3_to_4(conn: sqlite3.Connection) -> None:
+    """v7: soft-delete (trash) for records, plus an append-only audit log.
+
+    `audit_log` deliberately has no foreign keys to categories/records -- an
+    entry must survive the thing it describes being deleted (that's the whole
+    point of an audit trail), so category/record identity is denormalized as
+    plain id + name/label columns instead of relying on a live join.
+    """
+    conn.executescript(
+        """
+        ALTER TABLE records ADD COLUMN deleted_at TEXT;
+        CREATE INDEX idx_records_deleted ON records(deleted_at);
+
+        CREATE TABLE audit_log (
+          id            INTEGER PRIMARY KEY AUTOINCREMENT,
+          ts            TEXT NOT NULL,
+          user_id       INTEGER,
+          username      TEXT NOT NULL,
+          action        TEXT NOT NULL,
+          category_id   INTEGER,
+          category_name TEXT,
+          record_id     INTEGER,
+          record_label  TEXT,
+          detail        TEXT,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+        );
+        CREATE INDEX idx_audit_ts ON audit_log(id DESC);
+        """
+    )
+
+
 # {from_version: callable(sqlite3.Connection) -> None} -- applied in order,
 # each bumping meta.schema_version by one, until SCHEMA_VERSION is reached.
 MIGRATIONS: dict[int, "callable"] = {
     1: _migrate_1_to_2,
     2: _migrate_2_to_3,
+    3: _migrate_3_to_4,
 }
 
 

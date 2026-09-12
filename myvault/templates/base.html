@@ -15,6 +15,7 @@
     <a href="{{ url_for('index') }}">Dashboard</a>
     <a href="{{ url_for('calendar_view.view') }}">Calendar</a>
     <a href="{{ url_for('search.search_page') }}">Search</a>
+    <a href="{{ url_for('records.trash') }}">Trash</a>
     {% if current_user['role'] == 'admin' %}
       <a href="{{ url_for('categories.manage') }}">Categories</a>
       <a href="{{ url_for('settings.index') }}">Settings</a>
@@ -25,6 +26,19 @@
            value="{{ request.args.get('q', '') if request.endpoint == 'search.search_page' }}">
   </form>
   <div class="topbar-right">
+    {% if nav_categories %}
+      <div class="quickadd-wrap">
+        <button type="button" class="btn btn-primary" data-quickadd-toggle>+ Add</button>
+        <div class="quickadd-dropdown" data-quickadd-dropdown hidden>
+          <h3>Add a record to…</h3>
+          <ul class="quickadd-list">
+            {% for c in nav_categories %}
+              <li><a href="{{ url_for('records.create', category_id=c['id']) }}">{{ c['icon'] or '📁' }} {{ c['name'] }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    {% endif %}
     {% if header_alerts %}
       <div class="alert-badge-wrap">
         <button type="button" class="alert-badge alert-{{ header_alerts[0]['tier'] }}" data-alert-toggle>

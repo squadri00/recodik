@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Activity log · {{ app_title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Activity log</h1>
+  <a class="btn btn-ghost" href="{{ url_for('settings.index') }}">Back to Settings</a>
+</div>
+<p class="muted" style="margin-bottom:.75rem">
+  The most recent {{ entries|length }} action{{ '' if entries|length == 1 else 's' }}, newest first.
+</p>
+
+{% if not entries %}
+  <div class="empty"><p class="empty-title">Nothing recorded yet.</p></div>
+{% else %}
+<div class="table-scroll">
+<table class="tbl">
+  <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Category</th><th>Record</th><th>Detail</th></tr></thead>
+  <tbody>
+    {% for e in entries %}
+      <tr>
+        <td class="muted">{{ e['ts'][:19].replace('T', ' ') }}</td>
+        <td>{{ e['username'] }}</td>
+        <td>{{ action_labels.get(e['action'], e['action']) }}</td>
+        <td>{{ e['category_name'] or '—' }}</td>
+        <td>
+          {% if e['record_id'] and e['action'] in ('record_create', 'record_update', 'record_restore', 'record_clone') %}
+            <a href="{{ url_for('records.view', record_id=e['record_id']) }}">{{ e['record_label'] or ('#' ~ e['record_id']) }}</a>
+          {% else %}
+            {{ e['record_label'] or '—' }}
+          {% endif %}
+        </td>
+        <td class="muted">{{ e['detail'] or '' }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+{% endblock %}

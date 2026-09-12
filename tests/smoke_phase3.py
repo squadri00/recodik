@@ -156,10 +156,13 @@ hit = raw("SELECT record_id FROM records_fts WHERE records_fts MATCH 'nginx*'")
 assert len(hit) == 1
 print("OK  FTS synced on write; encrypted values not indexed; MATCH works")
 
-# --- delete record clears FTS row ---
+# --- delete moves to trash (row kept, FTS row cleared); purge removes it for good ---
 c.post(f"/records/{rid}/delete")
-assert len(raw("SELECT id FROM records WHERE id=?", rid)) == 0
+assert len(raw("SELECT id FROM records WHERE id=?", rid)) == 1
+assert raw("SELECT deleted_at FROM records WHERE id=?", rid)[0]["deleted_at"]
 assert len(raw("SELECT record_id FROM records_fts WHERE record_id=?", rid)) == 0
-print("OK  delete removes record + its FTS row")
+c.post(f"/records/{rid}/purge")
+assert len(raw("SELECT id FROM records WHERE id=?", rid)) == 0
+print("OK  delete moves the record to trash and clears its FTS row; purge removes it for good")
 
 print("\nPhase 3 smoke test: ALL PASSED")

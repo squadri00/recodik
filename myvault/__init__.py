@@ -9,7 +9,7 @@ import os
 
 from flask import Flask, g, redirect, render_template, url_for
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 
 
 def create_app(test_config: dict | None = None) -> Flask:
@@ -112,6 +112,7 @@ def create_app(test_config: dict | None = None) -> Flask:
         from .records import MAX_FILE_SIZE
 
         header_alerts = []
+        nav_categories = []
         if g.get("user") is not None:
             try:
                 from . import alerts as _alerts
@@ -119,6 +120,12 @@ def create_app(test_config: dict | None = None) -> Flask:
                 header_alerts = _alerts.active_alerts()
             except Exception:
                 header_alerts = []  # never let a broken date value break every page
+            try:
+                from .store import get_categories
+
+                nav_categories = get_categories()
+            except Exception:
+                nav_categories = []
 
         return {
             "app_title": title,
@@ -127,6 +134,7 @@ def create_app(test_config: dict | None = None) -> Flask:
             "app_version": __version__,
             "max_file_mb": MAX_FILE_SIZE // (1024 * 1024),
             "header_alerts": header_alerts,
+            "nav_categories": nav_categories,
         }
 
     @app.errorhandler(403)

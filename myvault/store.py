@@ -72,7 +72,7 @@ def link_choices(target_category_id: int) -> list[dict]:
     if not target_category_id:
         return []
     rows = get_db().execute(
-        "SELECT id, data FROM records WHERE category_id = ? ORDER BY id",
+        "SELECT id, data FROM records WHERE category_id = ? AND deleted_at IS NULL ORDER BY id",
         (target_category_id,),
     ).fetchall()
     out = []
@@ -91,7 +91,8 @@ def resolve_link(record_id: int) -> dict | None:
     if not record_id:
         return None
     row = get_db().execute(
-        "SELECT id, category_id, data FROM records WHERE id = ?", (int(record_id),)
+        "SELECT id, category_id, data FROM records WHERE id = ? AND deleted_at IS NULL",
+        (int(record_id),),
     ).fetchone()
     if row is None:
         return None
@@ -120,7 +121,7 @@ def referencing_records(category_id: int, record_id: int) -> list[dict]:
         path = "$." + lf["field_key"]  # field_key is a slug -> safe to build
         rows = db.execute(
             "SELECT id, category_id, data FROM records "
-            "WHERE category_id = ? AND json_extract(data, ?) = ?",
+            "WHERE category_id = ? AND deleted_at IS NULL AND json_extract(data, ?) = ?",
             (lf["category_id"], path, record_id),
         ).fetchall()
         for r in rows:

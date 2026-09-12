@@ -19,7 +19,7 @@ from flask import (
     url_for,
 )
 
-from . import alerts, crypto, search
+from . import alerts, audit, crypto, search
 from .auth import admin_required
 from .db import get_db
 from .fieldtypes import (
@@ -119,6 +119,7 @@ def new():
                 "VALUES(?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM categories), ?, ?)",
                 (name, icon, g.user["id"], now_iso()),
             )
+            audit.log("category_create", category_id=cur.lastrowid, category_name=name)
             db.commit()
             flash("Category created. Now add its fields.", "success")
             return redirect(url_for("categories.edit", category_id=cur.lastrowid))
@@ -193,8 +194,14 @@ def delete(category_id: int):
         )
         return redirect(url_for("categories.edit", category_id=category_id))
 
+    record_count = db.execute(
+        "SELECT COUNT(*) FROM records WHERE category_id = ?", (category_id,)
+    ).fetchone()[0]
+
     db.execute("DELETE FROM categories WHERE id = ?", (category_id,))
     db.execute("DELETE FROM records_fts WHERE category_id = ?", (category_id,))
+    audit.log("category_delete", category_id=category_id, category_name=category["name"],
+              detail=f"{record_count} record(s) permanently deleted with it")
     db.commit()
     flash(f"Deleted “{category['name']}” and all its records.", "success")
     return redirect(url_for("categories.manage"))

@@ -54,7 +54,8 @@ def _events_by_date() -> dict[str, list[dict]]:
         window = alert_window(f) if is_alert_field else None
 
         records = db.execute(
-            "SELECT id, category_id, data FROM records WHERE category_id = ?",
+            "SELECT id, category_id, data FROM records "
+            "WHERE category_id = ? AND deleted_at IS NULL",
             (f["category_id"],),
         ).fetchall()
 

@@ -149,14 +149,16 @@ assert "1 match" in r.get_data(as_text=True)
 assert "No matches" in c.get("/search", query_string={"q": "fake pdf content"}).get_data(as_text=True)
 print("OK  search finds a file by name; never by its (encrypted) content")
 
-# --- deleting the record cascades to its files ---
+# --- permanently deleting (purging) the record cascades to its files ---
+# (a plain /delete now only trashes it -- see smoke_phase17.py for that)
 last_file_id = data_of(rid).get("attachment")
 c.post(f"/records/{rid}/delete")
+c.post(f"/records/{rid}/purge")
 assert not raw("SELECT 1 FROM records WHERE id=?", rid)
 assert not raw("SELECT 1 FROM files WHERE record_id=?", rid)
 if last_file_id:
     assert not raw("SELECT 1 FROM files WHERE id=?", last_file_id)
-print("OK  deleting a record cascades to delete its attached files")
+print("OK  purging a record cascades to delete its attached files")
 
 # --- 404 on a nonexistent file id ---
 r = c.get("/records/files/999999/download")
@@ -190,12 +192,12 @@ conn.close()
 app2 = create_app({"DATABASE": v1_path, "TESTING": True, "SECRET_KEY": "t2"})
 conn = sqlite3.connect(v1_path)
 tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-assert "files" in tables and "alert_dismissals" in tables
+assert "files" in tables and "alert_dismissals" in tables and "audit_log" in tables
 ver = conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0]
-assert ver == "3"
+assert ver == "4"
 assert conn.execute("SELECT username FROM users").fetchone()[0] == "legacy"
 assert conn.execute("SELECT name FROM categories").fetchone()[0] == "Old Cat"
-print("OK  an existing v1 database is upgraded in place, all the way to v3 (files + "
-      "alert_dismissals added, data kept)")
+print("OK  an existing v1 database is upgraded in place, all the way to v4 (files + "
+      "alert_dismissals + audit_log added, data kept)")
 
 print("\nv3 file-attachments smoke test: ALL PASSED")

@@ -29,6 +29,10 @@ the engine. Password-type fields and uploaded files are **encrypted at rest**.
 | Backup & restore (v5) | Settings → download a full, consistent snapshot of the entire vault, or restore one — see [Backups](#backups) below. |
 | Sort & filter (v6) | Click a record-list column header to sort; a filter bar above it narrows by any column (text "contains", or a dropdown for choice/checkbox/linked-record fields). Both are shareable URLs. |
 | Calendar view (v7) | A month grid plotting every `date` and `date_alert` field, from every category, on its actual day — a domain's expiry, an invoice due date, a calendar event, all in one screen. Each category gets its own tag color; a `date_alert` tag carries the same overdue/upcoming styling as the header badge. Read-only; click a tag to open the record. |
+| Trash (v8) | Deleting a record moves it to **Trash** instead of erasing it — restore it, or delete it forever from there. Search, links, and back-references all hide a trashed record until it's restored. |
+| Activity log (v8) | Settings → **Activity log**: who created, edited, trashed, restored, purged, or cloned a record — or created/deleted a category — and when. Answers "did someone delete this?" |
+| Quick-add (v8) | A **+ Add** button in the header, on every page, opens every category in one dropdown — no need to navigate into a category first to add a record. |
+| Clone (v8) | A **Clone** button on a record's detail page duplicates it (including any attached file, as its own independent copy) into a new record in the same category, ready to edit. |
 | Users | Admin manages members; members edit records but can't restructure categories. |
 
 Relational / linked-record fields shipped in **v2** as the `link` field type
@@ -167,8 +171,10 @@ delete), converting a field to encrypted in place, Markdown rendering (incl.
 the XSS guards), expiry/reminder alerts (escalation, dismissal, the header
 badge), full-database backup/restore (validation, the safety snapshot, session
 reset), sort/filter on record lists, the calendar view (month/year rollover,
-per-category colors, alert-tier styling), and every schema migration along the
-way (v1→v2→v3) on a hand-built legacy database.
+per-category colors, alert-tier styling), trash/restore/purge (search, links
+and back-references all hiding a trashed record), the audit log, record
+cloning (including its own copy of an attached file), and every schema
+migration along the way (v1→v2→v3→v4) on a hand-built legacy database.
 
 ## Project layout
 
@@ -188,6 +194,7 @@ myvault/            application package (Flask app factory + blueprints)
   backup.py         v5: full-database backup download + validated restore
   richtext.py       Markdown -> sanitized HTML for textarea fields
   calendar_view.py  v7: month-grid calendar of every date-like field
+  audit.py          v8: append-only audit trail for record/category actions
   schema.sql        versioned schema (applied on a fresh DB)
   templates/  static/
 run.py              dev server entry

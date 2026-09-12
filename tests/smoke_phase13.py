@@ -166,7 +166,7 @@ conn = sqlite3.connect(v2_path)
 tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
 assert "alert_dismissals" in tables
 ver = conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0]
-assert ver == "3"
+assert ver == "4"
 assert conn.execute("SELECT username FROM users").fetchone()[0] == "legacy"
 print("OK  an existing v2 database is upgraded in place (alert_dismissals added, data kept)")
 

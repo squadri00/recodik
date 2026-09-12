@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Trash · {{ app_title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Trash</h1>
+</div>
+<p class="muted" style="margin-bottom:.75rem">
+  Deleted records land here first. Restore one, or delete it forever.
+</p>
+
+{% if not items %}
+  <div class="empty"><p class="empty-title">Trash is empty.</p></div>
+{% else %}
+<div class="table-scroll">
+<table class="tbl">
+  <thead><tr><th>Record</th><th>Category</th><th>Deleted</th><th></th></tr></thead>
+  <tbody>
+    {% for it in items %}
+      <tr>
+        <td>{{ it['label'] }}</td>
+        <td>{{ it['category_icon'] }} {{ it['category_name'] }}</td>
+        <td class="muted">{{ it['deleted_at'][:19].replace('T', ' ') }}</td>
+        <td class="row-actions">
+          <form method="post" action="{{ url_for('records.restore', record_id=it['id']) }}">
+            <button class="btn" type="submit">Restore</button>
+          </form>
+          <form method="post" action="{{ url_for('records.purge', record_id=it['id']) }}"
+                onsubmit="return confirm('Permanently delete this record? This cannot be undone.');">
+            <button class="btn btn-danger" type="submit">Delete forever</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+{% endblock %}

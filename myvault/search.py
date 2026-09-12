@@ -62,7 +62,8 @@ def _resolve_links(db: sqlite3.Connection, fields, data: dict) -> dict:
         if not rid:
             continue
         tgt = db.execute(
-            "SELECT category_id, data FROM records WHERE id = ?", (int(rid),)
+            "SELECT category_id, data FROM records WHERE id = ? AND deleted_at IS NULL",
+            (int(rid),),
         ).fetchone()
         if tgt is not None:
             aug[key] = record_label(tgt["category_id"],
@@ -89,13 +90,20 @@ def _resolve_files(db: sqlite3.Connection, fields, data: dict) -> dict:
 
 
 def reindex_record(db: sqlite3.Connection, record_id: int) -> None:
+    """(Re)index one record -- or, if it's trashed, make sure it's NOT indexed.
+
+    Checking `deleted_at` here (rather than trusting every caller to skip
+    trashed records) means a full reindex, a field's "encrypt existing
+    values" pass, or any future bulk operation can never resurrect a trashed
+    record into search results.
+    """
     db.execute("DELETE FROM records_fts WHERE record_id = ?", (record_id,))
     row = db.execute(
-        "SELECT r.id, r.category_id, r.data, c.name AS category_name "
+        "SELECT r.id, r.category_id, r.data, r.deleted_at, c.name AS category_name "
         "FROM records r JOIN categories c ON c.id = r.category_id WHERE r.id = ?",
         (record_id,),
     ).fetchone()
-    if row is None:
+    if row is None or row["deleted_at"] is not None:
         return
     fields = db.execute(
         "SELECT * FROM fields WHERE category_id = ?", (row["category_id"],)
@@ -117,7 +125,8 @@ def remove_record(db: sqlite3.Connection, record_id: int) -> None:
 
 def reindex_all(db: sqlite3.Connection) -> int:
     db.execute("DELETE FROM records_fts")
-    ids = [r["id"] for r in db.execute("SELECT id FROM records").fetchall()]
+    ids = [r["id"] for r in
+           db.execute("SELECT id FROM records WHERE deleted_at IS NULL").fetchall()]
     for rid in ids:
         reindex_record(db, rid)
     return len(ids)

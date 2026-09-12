@@ -1,4 +1,4 @@
--- MyVault schema (current: v3)
+-- MyVault schema (current: v4)
 -- Applied once on a fresh database. Versioned via meta.value where key='schema_version'.
 -- An existing older database is upgraded in place by myvault/db.py's MIGRATIONS instead.
 
@@ -47,6 +47,7 @@ CREATE TABLE records (
   created_by  INTEGER,
   created_at  TEXT NOT NULL,
   updated_at  TEXT NOT NULL,
+  deleted_at  TEXT,                        -- v7: set = in the trash; NULL = live
   FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
   FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
@@ -78,9 +79,28 @@ CREATE TABLE alert_dismissals (
   UNIQUE (record_id, field_key)
 );
 
+-- v7: append-only audit trail. No foreign keys to categories/records -- an
+-- entry must survive the thing it describes being deleted, so identity is
+-- denormalized as plain id + name/label columns instead of a live join.
+CREATE TABLE audit_log (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts            TEXT NOT NULL,
+  user_id       INTEGER,
+  username      TEXT NOT NULL,
+  action        TEXT NOT NULL,
+  category_id   INTEGER,
+  category_name TEXT,
+  record_id     INTEGER,
+  record_label  TEXT,
+  detail        TEXT,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
 CREATE INDEX idx_fields_category ON fields(category_id, sort_order);
 CREATE INDEX idx_records_category ON records(category_id, updated_at);
+CREATE INDEX idx_records_deleted ON records(deleted_at);
 CREATE INDEX idx_files_record ON files(record_id, field_key);
+CREATE INDEX idx_audit_ts ON audit_log(id DESC);
 
 -- Global full-text search. Content is rebuilt from records.data + categories.name
 -- on every record insert/update/delete (see myvault/search.py).

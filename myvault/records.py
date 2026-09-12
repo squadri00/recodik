@@ -32,7 +32,7 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-from . import alerts, crypto, search
+from . import alerts, audit, crypto, search
 from .auth import login_required
 from .db import get_db
 from .fieldtypes import is_date_like, is_encrypted
@@ -41,6 +41,7 @@ from .store import (
     get_fields,
     link_choices,
     link_target_id,
+    record_label,
     referencing_records,
     resolve_link,
 )
@@ -67,11 +68,13 @@ def _category_or_404(category_id: int):
     return cat
 
 
-def _record_or_404(record_id: int):
+def _record_or_404(record_id: int, include_deleted: bool = False):
     row = get_db().execute(
         "SELECT * FROM records WHERE id = ?", (record_id,)
     ).fetchone()
     if row is None:
+        abort(404)
+    if not include_deleted and row["deleted_at"] is not None:
         abort(404)
     return row
 
@@ -384,7 +387,8 @@ def list_records(category_id: int):
     category = _category_or_404(category_id)
     fields = get_fields(category_id)
     rows = get_db().execute(
-        "SELECT * FROM records WHERE category_id = ? ORDER BY updated_at DESC, id DESC",
+        "SELECT * FROM records WHERE category_id = ? AND deleted_at IS NULL "
+        "ORDER BY updated_at DESC, id DESC",
         (category_id,),
     ).fetchall()
     records = [record_view(r, fields) for r in rows]
@@ -460,6 +464,8 @@ def create(category_id: int):
             db.execute("UPDATE records SET data = ? WHERE id = ?",
                        (json.dumps(data), record_id))
         search.reindex_record(db, record_id)
+        audit.log("record_create", category_id=category_id, category_name=category["name"],
+                  record_id=record_id, record_label=record_label(category_id, data))
         db.commit()
         flash("Record added.", "success")
         return redirect(url_for("records.list_records", category_id=category_id))
@@ -513,6 +519,8 @@ def edit(record_id: int):
             (json.dumps(data), now_iso(), record_id),
         )
         search.reindex_record(db, record_id)
+        audit.log("record_update", category_id=category["id"], category_name=category["name"],
+                  record_id=record_id, record_label=record_label(category["id"], data))
         db.commit()
         flash("Record saved.", "success")
         return redirect(url_for("records.view", record_id=record_id))
@@ -528,13 +536,133 @@ def edit(record_id: int):
 @bp.route("/<int:record_id>/delete", methods=("POST",))
 @login_required
 def delete(record_id: int):
+    """Move a record to the trash. It stays recoverable until purged."""
     record = _record_or_404(record_id)
+    category = _category_or_404(record["category_id"])
+    data = json.loads(record["data"] or "{}")
     db = get_db()
-    db.execute("DELETE FROM records WHERE id = ?", (record_id,))
+    db.execute("UPDATE records SET deleted_at = ? WHERE id = ?", (now_iso(), record_id))
     search.remove_record(db, record_id)
+    audit.log("record_trash", category_id=category["id"], category_name=category["name"],
+              record_id=record_id, record_label=record_label(category["id"], data))
     db.commit()
-    flash("Record deleted.", "success")
+    flash("Record moved to trash.", "success")
     return redirect(url_for("records.list_records", category_id=record["category_id"]))
+
+
+@bp.route("/trash")
+@login_required
+def trash():
+    rows = get_db().execute(
+        "SELECT r.id, r.category_id, r.data, r.deleted_at, "
+        "c.name AS category_name, c.icon AS category_icon "
+        "FROM records r JOIN categories c ON c.id = r.category_id "
+        "WHERE r.deleted_at IS NOT NULL ORDER BY r.deleted_at DESC"
+    ).fetchall()
+    items = []
+    for r in rows:
+        data = json.loads(r["data"] or "{}")
+        items.append({
+            "id": r["id"],
+            "category_id": r["category_id"],
+            "category_name": r["category_name"],
+            "category_icon": r["category_icon"] or "📁",
+            "label": record_label(r["category_id"], data) or f"Record #{r['id']}",
+            "deleted_at": r["deleted_at"],
+        })
+    return render_template("trash.html", items=items)
+
+
+@bp.route("/<int:record_id>/restore", methods=("POST",))
+@login_required
+def restore(record_id: int):
+    record = _record_or_404(record_id, include_deleted=True)
+    if record["deleted_at"] is None:
+        abort(404)
+    category = _category_or_404(record["category_id"])
+    data = json.loads(record["data"] or "{}")
+    db = get_db()
+    db.execute("UPDATE records SET deleted_at = NULL WHERE id = ?", (record_id,))
+    search.reindex_record(db, record_id)
+    audit.log("record_restore", category_id=category["id"], category_name=category["name"],
+              record_id=record_id, record_label=record_label(category["id"], data))
+    db.commit()
+    flash("Record restored.", "success")
+    return redirect(url_for("records.trash"))
+
+
+@bp.route("/<int:record_id>/purge", methods=("POST",))
+@login_required
+def purge(record_id: int):
+    """Permanently delete a trashed record. Only reachable from the trash --
+    a record must be moved there first, so this is never a one-click action."""
+    record = _record_or_404(record_id, include_deleted=True)
+    if record["deleted_at"] is None:
+        abort(404)
+    category = get_category(record["category_id"])
+    data = json.loads(record["data"] or "{}")
+    db = get_db()
+    db.execute("DELETE FROM records WHERE id = ?", (record_id,))  # cascades its files
+    search.remove_record(db, record_id)
+    audit.log("record_purge",
+              category_id=record["category_id"],
+              category_name=category["name"] if category else None,
+              record_id=record_id,
+              record_label=record_label(record["category_id"], data) if category else None)
+    db.commit()
+    flash("Record permanently deleted.", "success")
+    return redirect(url_for("records.trash"))
+
+
+@bp.route("/<int:record_id>/clone", methods=("POST",))
+@login_required
+def clone(record_id: int):
+    """Duplicate a record into a new one in the same category, including its
+    own copies of any attached files (never sharing a `files` row with the
+    original -- deleting one clone must not break the other)."""
+    record = _record_or_404(record_id)
+    category = _category_or_404(record["category_id"])
+    fields = get_fields(category["id"])
+    if _has_encrypted_field(fields) and not crypto.is_unlocked():
+        return redirect(url_for("auth.unlock", next=request.path))
+
+    data = json.loads(record["data"] or "{}")
+    db = get_db()
+    cur = db.execute(
+        "INSERT INTO records(category_id, data, created_by, created_at, updated_at) "
+        "VALUES(?, ?, ?, ?, ?)",
+        (category["id"], json.dumps(data), g.user["id"], now_iso(), now_iso()),
+    )
+    new_id = cur.lastrowid
+
+    changed = False
+    for f in fields:
+        if f["field_type"] != "file":
+            continue
+        old_file_id = data.get(f["field_key"])
+        if not old_file_id:
+            continue
+        old_file = db.execute("SELECT * FROM files WHERE id = ?", (int(old_file_id),)).fetchone()
+        if old_file is None:
+            continue
+        new_cur = db.execute(
+            "INSERT INTO files(record_id, field_key, filename, content_type, size_bytes, "
+            "data, uploaded_by, uploaded_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?)",
+            (new_id, f["field_key"], old_file["filename"], old_file["content_type"],
+             old_file["size_bytes"], old_file["data"], g.user["id"], now_iso()),
+        )
+        data[f["field_key"]] = new_cur.lastrowid
+        changed = True
+    if changed:
+        db.execute("UPDATE records SET data = ? WHERE id = ?", (json.dumps(data), new_id))
+
+    search.reindex_record(db, new_id)
+    audit.log("record_clone", category_id=category["id"], category_name=category["name"],
+              record_id=new_id, record_label=record_label(category["id"], data),
+              detail=f"cloned from record #{record_id}")
+    db.commit()
+    flash("Record cloned. Edit the copy below.", "success")
+    return redirect(url_for("records.edit", record_id=new_id))
 
 
 @bp.route("/<int:record_id>/reveal", methods=("POST",))

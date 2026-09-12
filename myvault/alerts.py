@@ -65,7 +65,8 @@ def active_alerts() -> list[dict]:
         window = alert_window(f)
         key = f["field_key"]
         records = db.execute(
-            "SELECT id, category_id, data FROM records WHERE category_id = ?",
+            "SELECT id, category_id, data FROM records "
+            "WHERE category_id = ? AND deleted_at IS NULL",
             (f["category_id"],),
         ).fetchall()
 

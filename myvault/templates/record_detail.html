@@ -5,9 +5,12 @@
   <h1>{{ category['icon'] or '📁' }} {{ category['name'] }}</h1>
   <div class="row-actions">
     <a class="btn btn-primary" href="{{ url_for('records.edit', record_id=record['id']) }}">Edit</a>
+    <form method="post" action="{{ url_for('records.clone', record_id=record['id']) }}">
+      <button class="btn btn-ghost" type="submit">Clone</button>
+    </form>
     <a class="btn btn-ghost" href="{{ url_for('records.list_records', category_id=category['id']) }}">Back to list</a>
     <form method="post" action="{{ url_for('records.delete', record_id=record['id']) }}"
-          onsubmit="return confirm('Delete this record? This cannot be undone.');">
+          onsubmit="return confirm('Move this record to the trash? You can restore it later from Trash.');">
       <button class="btn btn-danger" type="submit">Delete</button>
     </form>
   </div>

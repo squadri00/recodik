@@ -23,7 +23,7 @@ from flask import (
 )
 from werkzeug.security import generate_password_hash
 
-from . import backup
+from . import audit, backup
 from .auth import MIN_PASSWORD_LEN, admin_required
 from .db import close_db, get_db
 from .util import now_iso
@@ -49,6 +49,13 @@ def _admin_count(db) -> int:
 @admin_required
 def index():
     return render_template("settings.html", users=_users(), coming_soon=False)
+
+
+@bp.route("/audit-log")
+@admin_required
+def audit_log():
+    return render_template("audit_log.html", entries=audit.recent(300),
+                           action_labels=audit.ACTION_LABELS)
 
 
 @bp.route("/users", methods=("POST",))

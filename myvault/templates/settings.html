@@ -94,4 +94,11 @@
   <h2>Vault</h2>
   <p class="muted">Changing the master password and customizing the app title arrive in Phase 9.</p>
 </div>
+
+<div class="card" style="margin-top:1.25rem">
+  <h2>Activity log</h2>
+  <p class="muted">Who created, edited, trashed, restored, or permanently deleted
+    a record or category, and when — the answer for "did someone delete this?"</p>
+  <a class="btn" href="{{ url_for('settings.audit_log') }}">View activity log</a>
+</div>
 {% endblock %}
