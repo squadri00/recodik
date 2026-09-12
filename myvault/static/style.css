@@ -283,6 +283,17 @@ thead .sticky-col { z-index: 1; }
   color: var(--primary); cursor: pointer; font: inherit; font-size: .85em; text-decoration: underline;
   width: auto;
 }
+.linkbtn-danger { color: var(--error-ink); }
+
+/* one-line, text-style row actions (record list) -- forms collapse via
+   display:contents so their button sits directly in the flex row, no
+   extra wrapper gap; the table's own horizontal scroll (not wrapping)
+   keeps this to a single line even with several actions. */
+.actions-line { display: flex; align-items: center; gap: .85rem; white-space: nowrap; }
+.actions-line form { display: contents; }
+.actions-line .linkbtn { margin: 0; font-size: .85rem; text-decoration: none; }
+.actions-line .linkbtn:hover { text-decoration: underline; }
+
 .reveal-out { margin-left: .4rem; }
 .reveal-err { color: var(--error-ink); }
 .revealed-value {
