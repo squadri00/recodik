@@ -1,10 +1,13 @@
 """Settings hub.
 
 Phase 5: user management (admin only) + role checks.
+v5 adds: full-database backup download + restore.
 Phase 9 adds: change master password, app-title customization.
 """
 
 from __future__ import annotations
+
+import os
 
 from flask import (
     Blueprint,
@@ -14,15 +17,20 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
+    session,
     url_for,
 )
 from werkzeug.security import generate_password_hash
 
+from . import backup
 from .auth import MIN_PASSWORD_LEN, admin_required
-from .db import get_db
+from .db import close_db, get_db
 from .util import now_iso
 
 bp = Blueprint("settings", __name__, url_prefix="/settings")
+
+RESTORE_CONFIRM_PHRASE = "RESTORE"
 
 VALID_ROLES = ("admin", "member")
 
@@ -130,3 +138,62 @@ def user_delete(user_id: int):
         db.commit()
         flash(f"Deleted “{user['username']}”. Their records were kept.", "success")
     return redirect(url_for("settings.index"))
+
+
+# --- full-database backup / restore -----------------------------------------
+
+@bp.route("/backup/download")
+@admin_required
+def backup_download():
+    """A consistent snapshot of the entire vault -- one file, drop it into any
+    MyVault installation (same deployment or a brand new one) to restore it."""
+    tmp_path = backup.make_download_copy()
+    resp = send_file(
+        tmp_path,
+        as_attachment=True,
+        download_name=backup.backup_filename(),
+        mimetype="application/octet-stream",
+        conditional=False,
+    )
+    resp.call_on_close(lambda: os.path.exists(tmp_path) and os.remove(tmp_path))
+    return resp
+
+
+@bp.route("/backup/restore", methods=("POST",))
+@admin_required
+def backup_restore():
+    """Replace the live vault with an uploaded backup file.
+
+    Deliberately heavy on safety checks: this is the one action in the app
+    that can discard everything currently in the vault.
+    """
+    if (request.form.get("confirm") or "").strip() != RESTORE_CONFIRM_PHRASE:
+        flash(f'Type "{RESTORE_CONFIRM_PHRASE}" (exactly) to confirm. Nothing was changed.',
+              "error")
+        return redirect(url_for("settings.index"))
+
+    file = request.files.get("backup_file")
+    if file is None or not file.filename:
+        flash("Choose a .sqlite3 backup file to restore.", "error")
+        return redirect(url_for("settings.index"))
+
+    tmp_path = backup.upload_temp_path()
+    file.save(tmp_path)
+
+    error = backup.validate_backup(tmp_path)
+    if error:
+        os.remove(tmp_path)
+        flash(f"Restore cancelled: {error}", "error")
+        return redirect(url_for("settings.index"))
+
+    close_db()  # this request's own connection must let go of the file first
+    safety_path = backup.restore(tmp_path)
+    session.clear()  # the logged-in user id may not exist in the restored database
+
+    flash(
+        "Vault restored from the uploaded backup. Your previous database was saved "
+        f"to {safety_path} in case anything looks wrong. The vault is now locked -- "
+        "sign in and unlock it with the restored database's own credentials.",
+        "success",
+    )
+    return redirect(url_for("auth.login"))

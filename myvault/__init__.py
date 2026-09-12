@@ -21,9 +21,10 @@ def create_app(test_config: dict | None = None) -> Flask:
         ),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
-        # Whole-request cap; must comfortably exceed records.MAX_FILE_SIZE
-        # (one uploaded file) plus form overhead.
-        MAX_CONTENT_LENGTH=int(os.environ.get("MYVAULT_MAX_UPLOAD_MB", "20")) * 1024 * 1024,
+        # Whole-request cap. Must comfortably exceed both records.MAX_FILE_SIZE
+        # (one uploaded file) and a full-database backup upload (Settings ->
+        # Restore), which can be much larger once a vault has many attachments.
+        MAX_CONTENT_LENGTH=int(os.environ.get("MYVAULT_MAX_UPLOAD_MB", "300")) * 1024 * 1024,
     )
     if test_config:
         app.config.update(test_config)
