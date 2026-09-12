@@ -16,14 +16,17 @@ the engine. Password-type fields and uploaded files are **encrypted at rest**.
 |---|---|
 | First-run setup | Create the first admin + a master password (derives the encryption key). |
 | Categories | Create / rename / delete / reorder; emoji icon; admin-only. |
-| Field builder | Per category: add / edit / remove / reorder fields. 13 field types. |
-| Field types | text, textarea, password (encrypted), url, email, number, date, dropdown, multi-select, **linked record**, **file**, checkbox, code. |
+| Field builder | Per category: add / edit / remove / reorder fields. 14 field types. |
+| Field types | text, textarea (Markdown), password (encrypted), url, email, number, date, **expiry/reminder date**, dropdown, multi-select, **linked record**, **file**, checkbox, code. |
 | Linked records (v2) | A `link` field points each record at one record in another category; renders as a dropdown of that category's records and a clickable link. The target record's detail page lists everything that references it. |
 | File attachments (v3) | A `file` field uploads one image or document per record, encrypted at rest in the same `.sqlite3` file (no separate folder to back up). Images preview inline; everything else downloads. Content requires the vault unlocked; filename/size stay visible either way. |
+| Text formatting | A small toolbar on `textarea` fields inserts Markdown (bold, italic, headings, lists, links, code); rendered as sanitized HTML on the record's detail page. |
+| Expiry / reminder alerts (v4) | A `date_alert` field warns N days before (and after) its date — a pulsing badge in the header, on every page, with a dismissible list. Re-alerts if dismissed early and later becomes overdue. |
 | Records | Dynamic form per category; list + detail views; any signed-in user can edit. |
 | Encryption | `password` values and `file` bytes are Fernet-encrypted; decrypted only on an explicit **Reveal** / **Download**. |
 | Search | FTS5 global search across every category; encrypted values and file contents are never indexed (filenames are). |
 | Templates | Export a category's field definitions to JSON; import to re-create it elsewhere. |
+| Backup & restore (v5) | Settings → download a full, consistent snapshot of the entire vault, or restore one — see [Backups](#backups) below. |
 | Users | Admin manages members; members edit records but can't restructure categories. |
 
 Relational / linked-record fields shipped in **v2** as the `link` field type
@@ -119,14 +122,28 @@ docker compose down -v       # stop, DELETE the data volume
 
 ### Backups
 
-The entire application state is the single SQLite file. To back it up:
+The entire application state is the single SQLite file, so backing it up (or
+moving the whole vault to a new installation) is one file-copy.
+
+**In-app (recommended, any deployment):** Settings → **Backup & restore**, as
+an admin.
+- **Download backup** streams a consistent snapshot straight from the browser
+  (safe to run any time, including while others are using the vault).
+- **Restore** uploads a `.sqlite3` to replace the current one — used to bring
+  the download from *this* section into a brand-new installation, or to roll
+  back. It validates the file first, automatically saves the current database
+  before overwriting it, and locks the vault afterward (whoever restored it
+  unlocks again with the restored database's own master password). Treat it
+  as one-way: type `RESTORE` to confirm.
+
+**From the command line (Docker):**
 
 ```bash
 docker compose cp myvault:/data/myvault.sqlite3 ./myvault-backup.sqlite3
 ```
 
 For the desktop / source setups, copy the `.sqlite3` file from the locations
-noted above.
+noted above — with the app closed if you want to skip the in-app download.
 
 ---
 
@@ -144,7 +161,11 @@ record CRUD with encryption-at-rest and reveal, FTS search sync, multi-user role
 enforcement, template export/import round-trips, input validation, a full
 "no plaintext or ciphertext in any rendered view" audit, linked records, file
 attachments (upload/replace/remove, size caps, inline vs. download, cascade
-delete), and the v1→v2 schema migration on an existing database.
+delete), converting a field to encrypted in place, Markdown rendering (incl.
+the XSS guards), expiry/reminder alerts (escalation, dismissal, the header
+badge), full-database backup/restore (validation, the safety snapshot, session
+reset), and every schema migration along the way (v1→v2→v3) on a hand-built
+legacy database.
 
 ## Project layout
 
@@ -159,7 +180,10 @@ myvault/            application package (Flask app factory + blueprints)
   search.py         FTS5 index maintenance + search UI
   templates_io.py   category template export / import
   settings.py       user management
-  fieldtypes.py     the 13 field types (11 v1 + link in v2 + file in v3)
+  fieldtypes.py     the 14 field types (11 v1 + link/file/date_alert in v2-4)
+  alerts.py         v4: expiry/reminder alert computation + dismissal
+  backup.py         v5: full-database backup download + validated restore
+  richtext.py       Markdown -> sanitized HTML for textarea fields
   schema.sql        versioned schema (applied on a fresh DB)
   templates/  static/
 run.py              dev server entry
