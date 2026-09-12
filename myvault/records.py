@@ -32,10 +32,10 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-from . import crypto, search
+from . import alerts, crypto, search
 from .auth import login_required
 from .db import get_db
-from .fieldtypes import is_encrypted
+from .fieldtypes import is_date_like, is_encrypted
 from .store import (
     get_category,
     get_fields,
@@ -44,7 +44,7 @@ from .store import (
     referencing_records,
     resolve_link,
 )
-from .util import now_iso
+from .util import now_iso, safe_next
 
 bp = Blueprint("records", __name__, url_prefix="/records")
 
@@ -175,7 +175,7 @@ def parse_form(fields, form, files, existing: dict | None) -> tuple[dict, list[s
             except ValueError:
                 errors.append(f"“{f['label']}” must be a number.")
             data[key] = raw
-        elif ftype == "date":
+        elif is_date_like(ftype):
             try:
                 datetime.strptime(raw, "%Y-%m-%d")
             except ValueError:
@@ -487,3 +487,18 @@ def download_file(file_id: int):
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["Cache-Control"] = "no-store"
     return resp
+
+
+@bp.route("/<int:record_id>/dismiss-alert", methods=("POST",))
+@login_required
+def dismiss_alert(record_id: int):
+    """Hide one expiry alert until its date changes or it becomes more urgent."""
+    _record_or_404(record_id)
+    field_key = (request.form.get("field_key") or "").strip()
+    value = (request.form.get("value") or "").strip()
+    tier = (request.form.get("tier") or "").strip()
+    if not field_key or not value:
+        abort(400)
+    alerts.dismiss(record_id, field_key, value, tier, g.user["id"])
+    flash("Alert dismissed.", "success")
+    return redirect(safe_next(request.form.get("next")) or url_for("index"))

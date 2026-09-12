@@ -102,9 +102,12 @@
         <input id="fld-{{ f['field_key'] }}" type="number" step="any" name="{{ f['field_key'] }}"
                value="{{ val }}" {{ 'required' if f['required'] }}>
 
-      {% elif f['field_type'] == 'date' %}
+      {% elif f['field_type'] in ('date', 'date_alert') %}
         <input id="fld-{{ f['field_key'] }}" type="date" name="{{ f['field_key'] }}"
                value="{{ val }}" {{ 'required' if f['required'] }}>
+        {% if f['field_type'] == 'date_alert' %}
+          <span class="hint">Shows in the header alert once it's within its reminder window.</span>
+        {% endif %}
 
       {% elif f['field_type'] == 'url' %}
         <input id="fld-{{ f['field_key'] }}" type="url" name="{{ f['field_key'] }}"

@@ -24,6 +24,38 @@
            value="{{ request.args.get('q', '') if request.endpoint == 'search.search_page' }}">
   </form>
   <div class="topbar-right">
+    {% if header_alerts %}
+      <div class="alert-badge-wrap">
+        <button type="button" class="alert-badge alert-{{ header_alerts[0]['tier'] }}" data-alert-toggle>
+          ⚠ {{ header_alerts|length }}
+        </button>
+        <div class="alert-dropdown" data-alert-dropdown hidden>
+          <h3>Expiring soon</h3>
+          <ul class="alert-list">
+            {% for a in header_alerts %}
+              <li class="alert-item alert-{{ a['tier'] }}">
+                <a href="{{ url_for('records.view', record_id=a['record_id']) }}">
+                  {{ a['category_icon'] or '📁' }} {{ a['label'] }}
+                </a>
+                <span class="alert-meta">
+                  {{ a['category_name'] }} · {{ a['field_label'] }} ·
+                  {% if a['days_left'] < 0 %}overdue by {{ -a['days_left'] }} day{{ '' if a['days_left'] == -1 else 's' }}
+                  {% elif a['days_left'] == 0 %}due today
+                  {% else %}in {{ a['days_left'] }} day{{ '' if a['days_left'] == 1 else 's' }}{% endif %}
+                </span>
+                <form method="post" action="{{ url_for('records.dismiss_alert', record_id=a['record_id']) }}">
+                  <input type="hidden" name="field_key" value="{{ a['field_key'] }}">
+                  <input type="hidden" name="value" value="{{ a['date'] }}">
+                  <input type="hidden" name="tier" value="{{ a['tier'] }}">
+                  <input type="hidden" name="next" value="{{ request.full_path }}">
+                  <button type="submit" class="linkbtn">Dismiss</button>
+                </form>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    {% endif %}
     {% if vault_unlocked %}
       <a class="pill pill-ok" href="{{ url_for('auth.lock') }}" title="Lock the vault">🔓 Unlocked</a>
     {% else %}

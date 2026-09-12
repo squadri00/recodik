@@ -106,12 +106,22 @@ def create_app(test_config: dict | None = None) -> Flask:
         from . import crypto
         from .records import MAX_FILE_SIZE
 
+        header_alerts = []
+        if g.get("user") is not None:
+            try:
+                from . import alerts as _alerts
+
+                header_alerts = _alerts.active_alerts()
+            except Exception:
+                header_alerts = []  # never let a broken date value break every page
+
         return {
             "app_title": title,
             "current_user": g.get("user"),
             "vault_unlocked": crypto.is_unlocked(),
             "app_version": __version__,
             "max_file_mb": MAX_FILE_SIZE // (1024 * 1024),
+            "header_alerts": header_alerts,
         }
 
     @app.errorhandler(403)

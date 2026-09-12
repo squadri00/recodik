@@ -19,10 +19,17 @@ from flask import (
     url_for,
 )
 
-from . import crypto, search
+from . import alerts, crypto, search
 from .auth import admin_required
 from .db import get_db
-from .fieldtypes import FIELD_TYPES, is_valid_type, needs_options, needs_target
+from .fieldtypes import (
+    DEFAULT_ALERT_DAYS,
+    FIELD_TYPES,
+    is_valid_type,
+    needs_alert_config,
+    needs_options,
+    needs_target,
+)
 from .store import (
     get_categories,
     get_category,
@@ -38,7 +45,8 @@ bp = Blueprint("categories", __name__, url_prefix="/categories")
 # Field types whose stored value is a plain string, and so can be encrypted in
 # place when an admin switches the type to `password` -- e.g. fixing a field
 # that was built before its data turned out to be sensitive.
-_ENCRYPTABLE_FROM = {"text", "textarea", "url", "email", "number", "date", "code", "dropdown"}
+_ENCRYPTABLE_FROM = {"text", "textarea", "url", "email", "number", "date", "date_alert",
+                    "code", "dropdown"}
 
 MAX_NAME = 80
 MAX_LABEL = 80
@@ -56,10 +64,14 @@ def _parse_options(raw: str) -> list[str]:
     return out
 
 
-def _options_json(ftype: str, options: list[str], target_id: int | None) -> str:
+def _options_json(ftype: str, options: list[str], target_id: int | None,
+                  alert_days: int | None = None) -> str:
     """The value for fields.options given the field type."""
     if needs_target(ftype):
         return json.dumps({"category_id": int(target_id)}) if target_id else "{}"
+    if needs_alert_config(ftype):
+        days = alert_days if alert_days is not None else DEFAULT_ALERT_DAYS
+        return json.dumps({"alert_days_before": days})
     if needs_options(ftype):
         return json.dumps(options)
     return "[]"
@@ -70,6 +82,16 @@ def _target_from_form() -> int | None:
     if not raw.isdigit():
         return None
     return int(raw) if get_category(int(raw)) is not None else None
+
+
+def _alert_days_from_form() -> tuple[int | None, str | None]:
+    """(days, error). Blank -> default; a present-but-invalid value errors."""
+    raw = (request.form.get("alert_days_before") or "").strip()
+    if not raw:
+        return DEFAULT_ALERT_DAYS, None
+    if not raw.isdigit():
+        return None, "“Remind me N days before” must be a whole number."
+    return int(raw), None
 
 
 # --- category CRUD ---------------------------------------------------------
@@ -118,6 +140,8 @@ def edit(category_id: int):
         all_categories=get_categories(),
         link_targets={f["id"]: link_target_id(f) for f in fields
                       if f["field_type"] == "link"},
+        alert_days={f["id"]: alerts.alert_window(f) for f in fields
+                    if f["field_type"] == "date_alert"},
     )
 
 
@@ -197,10 +221,11 @@ def field_add(category_id: int):
     required = 1 if request.form.get("required") else 0
     options = _parse_options(request.form.get("options", ""))
     target_id = _target_from_form()
+    alert_days, alert_error = _alert_days_from_form()
 
     existing = get_fields(category_id)
     error = (_validate_field(label, ftype, options, target_id)
-             or _dup_label(label, existing))
+             or alert_error or _dup_label(label, existing))
     if error:
         flash(error, "error")
         return redirect(url_for("categories.edit", category_id=category_id))
@@ -213,7 +238,7 @@ def field_add(category_id: int):
         "VALUES(?, ?, ?, ?, ?, ?, "
         "(SELECT COALESCE(MAX(sort_order), -1) + 1 FROM fields WHERE category_id = ?))",
         (category_id, label, field_key, ftype,
-         _options_json(ftype, options, target_id), required, category_id),
+         _options_json(ftype, options, target_id, alert_days), required, category_id),
     )
     db.commit()
     flash(f"Added field “{label}”.", "success")
@@ -240,6 +265,8 @@ def field_edit(category_id: int, field_id: int):
         field_types=FIELD_TYPES,
         all_categories=get_categories(),
         current_target=link_target_id(field),
+        current_alert_days=(alerts.alert_window(field)
+                           if field["field_type"] == "date_alert" else DEFAULT_ALERT_DAYS),
         can_encrypt=field["field_type"] in _ENCRYPTABLE_FROM,
     )
 
@@ -258,10 +285,11 @@ def field_update(category_id: int, field_id: int):
     required = 1 if request.form.get("required") else 0
     options = _parse_options(request.form.get("options", ""))
     target_id = _target_from_form()
+    alert_days, alert_error = _alert_days_from_form()
 
     others = [f for f in get_fields(category_id) if f["id"] != field_id]
     error = (_validate_field(label, ftype, options, target_id)
-             or _dup_label(label, others))
+             or alert_error or _dup_label(label, others))
     if error:
         flash(error, "error")
         return redirect(
@@ -287,7 +315,7 @@ def field_update(category_id: int, field_id: int):
     db.execute(
         "UPDATE fields SET label = ?, field_type = ?, options = ?, required = ? "
         "WHERE id = ? AND category_id = ?",
-        (label, ftype, _options_json(ftype, options, target_id),
+        (label, ftype, _options_json(ftype, options, target_id, alert_days),
          required, field_id, category_id),
     )
 

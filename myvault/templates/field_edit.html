@@ -17,6 +17,7 @@
         {% for key, meta in field_types.items() %}
           <option value="{{ key }}" data-options="{{ 1 if meta['options'] else 0 }}"
                   data-target="{{ 1 if meta['target'] else 0 }}"
+                  data-alert="{{ 1 if meta['alert'] else 0 }}"
                   {{ 'selected' if key == field['field_type'] }}>{{ meta['label'] }}</option>
         {% endfor %}
       </select>
@@ -37,6 +38,11 @@
           <option value="{{ c['id'] }}" {{ 'selected' if c['id'] == current_target }}>{{ c['name'] }}</option>
         {% endfor %}
       </select>
+    </label>
+    <label data-alert-wrap {{ 'hidden' if not (field['field_type'] in field_types and field_types[field['field_type']]['alert']) }}>
+      Remind me this many days before
+      <span class="hint">The header alert appears once the date is this close (or past). 0 = only once overdue.</span>
+      <input type="number" name="alert_days_before" min="0" step="1" value="{{ current_alert_days }}">
     </label>
     {% if can_encrypt %}
       <label class="check" data-encrypt-wrap hidden>

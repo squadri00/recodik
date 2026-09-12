@@ -45,6 +45,8 @@
             {%- set tid = link_targets.get(f['id']) -%}
             {%- set tcat = (all_categories | selectattr('id', 'equalto', tid) | first) if tid else none -%}
             <span class="muted">&rarr; {{ tcat['name'] if tcat else 'no target' }}</span>
+          {%- elif f['field_type'] == 'date_alert' %}
+            <span class="muted">&mdash; {{ alert_days.get(f['id'], 30) }} day(s) before</span>
           {%- endif %}
         </td>
         <td>{{ 'Yes' if f['required'] else '—' }}</td>
@@ -73,7 +75,8 @@
         <select name="field_type" data-field-type>
           {% for key, meta in field_types.items() %}
             <option value="{{ key }}" data-options="{{ 1 if meta['options'] else 0 }}"
-                    data-target="{{ 1 if meta['target'] else 0 }}">{{ meta['label'] }}</option>
+                    data-target="{{ 1 if meta['target'] else 0 }}"
+                    data-alert="{{ 1 if meta['alert'] else 0 }}">{{ meta['label'] }}</option>
           {% endfor %}
         </select>
       </label>
@@ -92,6 +95,10 @@
           <option value="{{ c['id'] }}">{{ c['name'] }}</option>
         {% endfor %}
       </select>
+    </label>
+    <label data-alert-wrap hidden>Remind me this many days before
+      <span class="hint">The header alert appears once the date is this close (or past). 0 = only once overdue.</span>
+      <input type="number" name="alert_days_before" min="0" step="1" value="30">
     </label>
     <button class="btn btn-primary" type="submit">Add field</button>
   </form>

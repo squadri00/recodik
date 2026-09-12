@@ -30,6 +30,7 @@ hiddenimports = [
     "myvault.db",
     "myvault.paths",
     "myvault.richtext",
+    "myvault.alerts",
     "markdown.extensions.nl2br",
 ] + collect_submodules("waitress") + collect_submodules("markdown.extensions")
 

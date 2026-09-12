@@ -12,7 +12,7 @@ import sqlite3
 
 from flask import current_app, g
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def _migrate_1_to_2(conn: sqlite3.Connection) -> None:
@@ -37,10 +37,31 @@ def _migrate_1_to_2(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migrate_2_to_3(conn: sqlite3.Connection) -> None:
+    """v4: expiry/reminder alerts (`date_alert` fields) -- dismissal state."""
+    conn.executescript(
+        """
+        CREATE TABLE alert_dismissals (
+          id              INTEGER PRIMARY KEY AUTOINCREMENT,
+          record_id       INTEGER NOT NULL,
+          field_key       TEXT NOT NULL,
+          dismissed_value TEXT NOT NULL,   -- the date (YYYY-MM-DD) current when dismissed
+          dismissed_tier  TEXT NOT NULL,   -- 'upcoming' | 'overdue' -- severity at dismiss time
+          dismissed_by    INTEGER,
+          dismissed_at    TEXT NOT NULL,
+          FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE,
+          FOREIGN KEY (dismissed_by) REFERENCES users(id) ON DELETE SET NULL,
+          UNIQUE (record_id, field_key)
+        );
+        """
+    )
+
+
 # {from_version: callable(sqlite3.Connection) -> None} -- applied in order,
 # each bumping meta.schema_version by one, until SCHEMA_VERSION is reached.
 MIGRATIONS: dict[int, "callable"] = {
     1: _migrate_1_to_2,
+    2: _migrate_2_to_3,
 }
 
 

@@ -6,12 +6,14 @@ document.querySelectorAll("[data-field-form]").forEach(function (form) {
   var select = form.querySelector("[data-field-type]");
   var optionsWrap = form.querySelector("[data-options-wrap]");
   var targetWrap = form.querySelector("[data-target-wrap]");
+  var alertWrap = form.querySelector("[data-alert-wrap]");
   var encryptWrap = form.querySelector("[data-encrypt-wrap]");
   if (!select) return;
   function sync() {
     var opt = select.options[select.selectedIndex];
     if (optionsWrap) optionsWrap.hidden = !(opt && opt.dataset.options === "1");
     if (targetWrap) targetWrap.hidden = !(opt && opt.dataset.target === "1");
+    if (alertWrap) alertWrap.hidden = !(opt && opt.dataset.alert === "1");
     if (encryptWrap) encryptWrap.hidden = !(opt && opt.value === "password");
   }
   select.addEventListener("change", sync);
@@ -61,6 +63,23 @@ document.addEventListener("click", function (e) {
       out.className = "reveal-out reveal-err";
     })
     .finally(function () { btn.disabled = false; });
+});
+
+// --- Expiry/reminder alert dropdown -----------------------------------------
+document.querySelectorAll("[data-alert-toggle]").forEach(function (btn) {
+  var wrap = btn.closest(".alert-badge-wrap");
+  var dropdown = wrap && wrap.querySelector("[data-alert-dropdown]");
+  if (!dropdown) return;
+  btn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    dropdown.hidden = !dropdown.hidden;
+  });
+  document.addEventListener("click", function (e) {
+    if (!dropdown.hidden && !wrap.contains(e.target)) dropdown.hidden = true;
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") dropdown.hidden = true;
+  });
 });
 
 // --- Markdown toolbar for `textarea` fields ---------------------------------

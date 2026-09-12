@@ -20,9 +20,17 @@ from flask import (
     url_for,
 )
 
+from . import alerts
 from .auth import admin_required
 from .db import get_db
-from .fieldtypes import FIELD_TYPES, is_valid_type, needs_options, needs_target
+from .fieldtypes import (
+    DEFAULT_ALERT_DAYS,
+    FIELD_TYPES,
+    is_valid_type,
+    needs_alert_config,
+    needs_options,
+    needs_target,
+)
 from .store import get_category, get_fields, link_target_id
 from .util import now_iso, slugify_key, uniquify_key
 
@@ -47,6 +55,8 @@ def _field_export(f) -> dict:
         # portable across installs: reference the target by name, not id
         tgt = get_category(link_target_id(f))
         out["target_category"] = tgt["name"] if tgt is not None else None
+    elif needs_alert_config(f["field_type"]):
+        out["alert_days_before"] = alerts.alert_window(f)
     else:
         try:
             opts = json.loads(f["options"] or "[]")
@@ -129,6 +139,13 @@ def parse_template(text: str) -> tuple[dict | None, str | None]:
         if needs_target(ftype):
             target_name = str(rf.get("target_category") or "").strip() or None
 
+        alert_days = None
+        if needs_alert_config(ftype):
+            try:
+                alert_days = max(0, int(rf.get("alert_days_before", DEFAULT_ALERT_DAYS)))
+            except (ValueError, TypeError):
+                alert_days = DEFAULT_ALERT_DAYS
+
         key = uniquify_key(slugify_key(label), taken)
         taken.add(key)
         clean.append({
@@ -138,6 +155,7 @@ def parse_template(text: str) -> tuple[dict | None, str | None]:
             "required": 1 if rf.get("required") else 0,
             "options": options if needs_options(ftype) else [],
             "target_name": target_name,
+            "alert_days_before": alert_days,
         })
 
     return {"name": name, "icon": icon, "fields": clean}, None
@@ -190,6 +208,8 @@ def import_category():
             opts_json = json.dumps({"category_id": tgt}) if tgt else "{}"
             if not tgt:
                 unresolved += 1
+        elif f["field_type"] == "date_alert":
+            opts_json = json.dumps({"alert_days_before": f.get("alert_days_before", DEFAULT_ALERT_DAYS)})
         else:
             opts_json = json.dumps(f["options"])
         db.execute(

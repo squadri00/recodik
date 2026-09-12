@@ -1,6 +1,6 @@
--- MyVault schema (current: v2)
+-- MyVault schema (current: v3)
 -- Applied once on a fresh database. Versioned via meta.value where key='schema_version'.
--- An existing v1 database is upgraded in place by myvault/db.py's MIGRATIONS instead.
+-- An existing older database is upgraded in place by myvault/db.py's MIGRATIONS instead.
 
 PRAGMA foreign_keys = ON;
 
@@ -63,6 +63,19 @@ CREATE TABLE files (
   uploaded_at  TEXT NOT NULL,
   FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE,
   FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE alert_dismissals (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  record_id       INTEGER NOT NULL,
+  field_key       TEXT NOT NULL,
+  dismissed_value TEXT NOT NULL,   -- the date (YYYY-MM-DD) current when dismissed
+  dismissed_tier  TEXT NOT NULL,   -- 'upcoming' | 'overdue' -- severity at dismiss time
+  dismissed_by    INTEGER,
+  dismissed_at    TEXT NOT NULL,
+  FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE,
+  FOREIGN KEY (dismissed_by) REFERENCES users(id) ON DELETE SET NULL,
+  UNIQUE (record_id, field_key)
 );
 
 CREATE INDEX idx_fields_category ON fields(category_id, sort_order);
