@@ -92,8 +92,16 @@
           {% for cell in rec['cells'] %}
             <td>{% include "_cell.html" %}</td>
           {% endfor %}
-          <td class="sticky-col">
+          <td class="sticky-col row-actions">
             <a class="btn" href="{{ url_for('records.view', record_id=rec['id']) }}">Open</a>
+            <a class="btn" href="{{ url_for('records.edit', record_id=rec['id']) }}">Edit</a>
+            <form method="post" action="{{ url_for('records.clone', record_id=rec['id']) }}">
+              <button class="btn" type="submit">Clone</button>
+            </form>
+            <form method="post" action="{{ url_for('records.delete', record_id=rec['id']) }}"
+                  onsubmit="return confirm('Move this record to the trash? You can restore it later from Trash.');">
+              <button class="btn btn-danger" type="submit">Delete</button>
+            </form>
           </td>
         </tr>
       {% endfor %}
@@ -102,7 +110,7 @@
   </div>
   <p class="muted" style="margin-top:.75rem">
     {{ records|length }} record{{ '' if records|length == 1 else 's' }}
-    {%- if active_filters %} of {{ total_count }}{% endif %}. Open a record to edit or delete it.
+    {%- if active_filters %} of {{ total_count }}{% endif %}.
   </p>
   {% endif %}
 {% endif %}
