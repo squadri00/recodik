@@ -206,7 +206,7 @@ assert "audit_log" in tables
 cols = {r[1] for r in conn.execute("PRAGMA table_info(records)")}
 assert "deleted_at" in cols
 ver = conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0]
-assert ver == "4"
+assert ver == "5"
 assert conn.execute("SELECT data FROM records WHERE id=1").fetchone()["data"] == "{}"
 print("OK  an existing v3 database is upgraded in place (deleted_at + audit_log added, data kept)")
 

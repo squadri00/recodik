@@ -112,6 +112,12 @@ def reindex_record(db: sqlite3.Connection, record_id: int) -> None:
     data = _resolve_links(db, fields, data)
     data = _resolve_files(db, fields, data)
     text = record_search_text(fields, data)
+    tag_names = [r["name"] for r in db.execute(
+        "SELECT t.name FROM tags t JOIN record_tags rt ON rt.tag_id = t.id "
+        "WHERE rt.record_id = ?", (record_id,),
+    ).fetchall()]
+    if tag_names:
+        text = (text + "  " + " ".join(tag_names)).strip()
     db.execute(
         "INSERT INTO records_fts(record_id, category_id, category_name, content) "
         "VALUES(?, ?, ?, ?)",

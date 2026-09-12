@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Costs · {{ app_title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Costs</h1>
+</div>
+<p class="muted" style="margin-bottom:.75rem">
+  Every <code>Cost (recurring)</code> field, from every category, rolled up onto one total.
+</p>
+
+{% if not rollup['categories'] %}
+  <div class="empty">
+    <p class="empty-title">No cost fields yet.</p>
+    <p>Add a "Cost (recurring)" field to a category (Subscriptions, Hosting, Domains…)
+      and its amounts will show up here.</p>
+  </div>
+{% else %}
+  <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));margin-bottom:1.25rem">
+    <div class="card">
+      <div class="muted" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.04em">Monthly total</div>
+      <div style="font-size:1.6rem;font-weight:700">{{ '%.2f' | format(rollup['grand_monthly']) }}</div>
+    </div>
+    <div class="card">
+      <div class="muted" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.04em">Annual total</div>
+      <div style="font-size:1.6rem;font-weight:700">{{ '%.2f' | format(rollup['grand_yearly']) }}</div>
+    </div>
+    {% if rollup['grand_one_time'] %}
+    <div class="card">
+      <div class="muted" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.04em">One-time (not recurring)</div>
+      <div style="font-size:1.6rem;font-weight:700">{{ '%.2f' | format(rollup['grand_one_time']) }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% for cat in rollup['categories'] %}
+    <div class="card" style="margin-top:1.25rem">
+      <h2>{{ cat['category_icon'] }} {{ cat['category_name'] }}
+        <span class="muted" style="font-weight:400;font-size:.85rem">
+          — {{ '%.2f' | format(cat['monthly_total']) }}/mo · {{ '%.2f' | format(cat['yearly_total']) }}/yr
+          {%- if cat['one_time_total'] %} · {{ '%.2f' | format(cat['one_time_total']) }} one-time{% endif -%}
+        </span>
+      </h2>
+      <table class="tbl">
+        <thead><tr><th>Record</th><th>Field</th><th>Amount</th></tr></thead>
+        <tbody>
+          {% for item in cat['items'] %}
+            <tr>
+              <td><a href="{{ url_for('records.view', record_id=item['record_id']) }}">{{ item['label'] }}</a></td>
+              <td class="muted">{{ item['field_label'] }}</td>
+              <td>{{ '%.2f' | format(item['amount']) }}
+                <span class="muted">{{ {'monthly': '/mo', 'yearly': '/yr', 'one_time': '(one-time)'}.get(item['frequency'], '') }}</span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

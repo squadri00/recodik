@@ -1,4 +1,4 @@
--- MyVault schema (current: v4)
+-- MyVault schema (current: v5)
 -- Applied once on a fresh database. Versioned via meta.value where key='schema_version'.
 -- An existing older database is upgraded in place by myvault/db.py's MIGRATIONS instead.
 
@@ -96,11 +96,25 @@ CREATE TABLE audit_log (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
+-- v9: cross-category tags, free-form, independent of category/field structure.
+CREATE TABLE tags (
+  id   INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT UNIQUE NOT NULL COLLATE NOCASE
+);
+CREATE TABLE record_tags (
+  record_id INTEGER NOT NULL,
+  tag_id    INTEGER NOT NULL,
+  PRIMARY KEY (record_id, tag_id),
+  FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE,
+  FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+
 CREATE INDEX idx_fields_category ON fields(category_id, sort_order);
 CREATE INDEX idx_records_category ON records(category_id, updated_at);
 CREATE INDEX idx_records_deleted ON records(deleted_at);
 CREATE INDEX idx_files_record ON files(record_id, field_key);
 CREATE INDEX idx_audit_ts ON audit_log(id DESC);
+CREATE INDEX idx_record_tags_tag ON record_tags(tag_id);
 
 -- Global full-text search. Content is rebuilt from records.data + categories.name
 -- on every record insert/update/delete (see myvault/search.py).

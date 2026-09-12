@@ -18,6 +18,7 @@
           <option value="{{ key }}" data-options="{{ 1 if meta['options'] else 0 }}"
                   data-target="{{ 1 if meta['target'] else 0 }}"
                   data-alert="{{ 1 if meta['alert'] else 0 }}"
+                  data-frequency="{{ 1 if meta['frequency'] else 0 }}"
                   {{ 'selected' if key == field['field_type'] }}>{{ meta['label'] }}</option>
         {% endfor %}
       </select>
@@ -43,6 +44,15 @@
       Remind me this many days before
       <span class="hint">The header alert appears once the date is this close (or past). 0 = only once overdue.</span>
       <input type="number" name="alert_days_before" min="0" step="1" value="{{ current_alert_days }}">
+    </label>
+    <label data-frequency-wrap {{ 'hidden' if not (field['field_type'] in field_types and field_types[field['field_type']]['frequency']) }}>
+      Billing frequency
+      <span class="hint">How each record's amount is billed — rolled up on the Costs dashboard.</span>
+      <select name="frequency">
+        <option value="monthly" {{ 'selected' if current_frequency == 'monthly' }}>Monthly</option>
+        <option value="yearly" {{ 'selected' if current_frequency == 'yearly' }}>Yearly</option>
+        <option value="one_time" {{ 'selected' if current_frequency == 'one_time' }}>One-time</option>
+      </select>
     </label>
     {% if can_encrypt %}
       <label class="check" data-encrypt-wrap hidden>

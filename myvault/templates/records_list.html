@@ -25,7 +25,7 @@
   </div>
 {% else %}
   {% set filterable_fields = fields | selectattr("field_type", "in",
-      ["text","textarea","url","email","code","date","date_alert","number","dropdown","checkbox","link"]) | list %}
+      ["text","textarea","url","email","code","date","date_alert","number","cost","dropdown","checkbox","link"]) | list %}
   {% if filterable_fields %}
   <details class="filter-bar" {{ 'open' if active_filters }}>
     <summary>Filter{% if active_filters %} ({{ active_filters|length }} active){% endif %}</summary>

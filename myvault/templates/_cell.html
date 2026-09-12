@@ -31,6 +31,8 @@
   {%- else -%}<span class="muted">—</span>{%- endif -%}
 {%- elif not cell['has_value'] -%}
   <span class="muted">—</span>
+{%- elif cell['type'] == 'cost' -%}
+  {{ cell['raw'] }} <span class="muted">{{ {'monthly': '/mo', 'yearly': '/yr', 'one_time': '(one-time)'}.get(cell['frequency'], '') }}</span>
 {%- elif cell['type'] == 'url' -%}
   <a href="{{ cell['raw'] }}" target="_blank" rel="noopener noreferrer">{{ cell['raw'] }}</a>
 {%- elif cell['type'] == 'email' -%}

@@ -16,6 +16,14 @@
   </div>
 </div>
 
+{% if record_tags %}
+<div class="tag-row">
+  {% for t in record_tags %}
+    <a class="tag-pill" href="{{ url_for('tags.view', tag_id=t['id']) }}">{{ t['name'] }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
 <div class="card" data-reveal-form>
   <dl class="detail">
     {% for cell in record['cells'] %}

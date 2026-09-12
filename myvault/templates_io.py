@@ -20,14 +20,17 @@ from flask import (
     url_for,
 )
 
-from . import alerts
+from . import alerts, costs
 from .auth import admin_required
 from .db import get_db
 from .fieldtypes import (
+    COST_FREQUENCIES,
     DEFAULT_ALERT_DAYS,
+    DEFAULT_FREQUENCY,
     FIELD_TYPES,
     is_valid_type,
     needs_alert_config,
+    needs_frequency,
     needs_options,
     needs_target,
 )
@@ -57,6 +60,8 @@ def _field_export(f) -> dict:
         out["target_category"] = tgt["name"] if tgt is not None else None
     elif needs_alert_config(f["field_type"]):
         out["alert_days_before"] = alerts.alert_window(f)
+    elif needs_frequency(f["field_type"]):
+        out["frequency"] = costs.cost_frequency(f)
     else:
         try:
             opts = json.loads(f["options"] or "[]")
@@ -146,6 +151,11 @@ def parse_template(text: str) -> tuple[dict | None, str | None]:
             except (ValueError, TypeError):
                 alert_days = DEFAULT_ALERT_DAYS
 
+        frequency = None
+        if needs_frequency(ftype):
+            raw_freq = str(rf.get("frequency") or DEFAULT_FREQUENCY)
+            frequency = raw_freq if raw_freq in COST_FREQUENCIES else DEFAULT_FREQUENCY
+
         key = uniquify_key(slugify_key(label), taken)
         taken.add(key)
         clean.append({
@@ -156,6 +166,7 @@ def parse_template(text: str) -> tuple[dict | None, str | None]:
             "options": options if needs_options(ftype) else [],
             "target_name": target_name,
             "alert_days_before": alert_days,
+            "frequency": frequency,
         })
 
     return {"name": name, "icon": icon, "fields": clean}, None
@@ -210,6 +221,8 @@ def import_category():
                 unresolved += 1
         elif f["field_type"] == "date_alert":
             opts_json = json.dumps({"alert_days_before": f.get("alert_days_before", DEFAULT_ALERT_DAYS)})
+        elif f["field_type"] == "cost":
+            opts_json = json.dumps({"frequency": f.get("frequency", DEFAULT_FREQUENCY)})
         else:
             opts_json = json.dumps(f["options"])
         db.execute(

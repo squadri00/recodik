@@ -12,7 +12,7 @@ import sqlite3
 
 from flask import current_app, g
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 def _migrate_1_to_2(conn: sqlite3.Connection) -> None:
@@ -88,12 +88,34 @@ def _migrate_3_to_4(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migrate_4_to_5(conn: sqlite3.Connection) -> None:
+    """v9: cross-category tags. A `cost` field type also ships in v9, but it
+    needs no schema change -- fields.field_type is a free-form TEXT column."""
+    conn.executescript(
+        """
+        CREATE TABLE tags (
+          id   INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT UNIQUE NOT NULL COLLATE NOCASE
+        );
+        CREATE TABLE record_tags (
+          record_id INTEGER NOT NULL,
+          tag_id    INTEGER NOT NULL,
+          PRIMARY KEY (record_id, tag_id),
+          FOREIGN KEY (record_id) REFERENCES records(id) ON DELETE CASCADE,
+          FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+        );
+        CREATE INDEX idx_record_tags_tag ON record_tags(tag_id);
+        """
+    )
+
+
 # {from_version: callable(sqlite3.Connection) -> None} -- applied in order,
 # each bumping meta.schema_version by one, until SCHEMA_VERSION is reached.
 MIGRATIONS: dict[int, "callable"] = {
     1: _migrate_1_to_2,
     2: _migrate_2_to_3,
     3: _migrate_3_to_4,
+    4: _migrate_4_to_5,
 }
 
 

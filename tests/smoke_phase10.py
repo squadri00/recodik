@@ -193,11 +193,12 @@ app2 = create_app({"DATABASE": v1_path, "TESTING": True, "SECRET_KEY": "t2"})
 conn = sqlite3.connect(v1_path)
 tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
 assert "files" in tables and "alert_dismissals" in tables and "audit_log" in tables
+assert "tags" in tables and "record_tags" in tables
 ver = conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0]
-assert ver == "4"
+assert ver == "5"
 assert conn.execute("SELECT username FROM users").fetchone()[0] == "legacy"
 assert conn.execute("SELECT name FROM categories").fetchone()[0] == "Old Cat"
-print("OK  an existing v1 database is upgraded in place, all the way to v4 (files + "
-      "alert_dismissals + audit_log added, data kept)")
+print("OK  an existing v1 database is upgraded in place, all the way to v5 (files + "
+      "alert_dismissals + audit_log + tags added, data kept)")
 
 print("\nv3 file-attachments smoke test: ALL PASSED")

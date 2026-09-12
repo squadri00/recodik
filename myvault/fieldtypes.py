@@ -17,24 +17,33 @@ from __future__ import annotations
 #   alert    = uses fields.options as {"alert_days_before": N}; the header
 #              shows an expiry/reminder alert once the date is within N days
 #              (v4 field -- see myvault/alerts.py)
+#   frequency = uses fields.options as {"frequency": "monthly"|"yearly"|"one_time"};
+#               a plain numeric amount, billed on this cadence -- rolled up
+#               across every category on the Costs dashboard (v9 field --
+#               see myvault/costs.py)
 FIELD_TYPES: dict[str, dict] = {
-    "text":        {"label": "Text",                "options": False, "encrypted": False, "target": False, "alert": False},
-    "textarea":    {"label": "Text area",           "options": False, "encrypted": False, "target": False, "alert": False},
-    "password":    {"label": "Password (encrypted)", "options": False, "encrypted": True, "target": False, "alert": False},
-    "url":         {"label": "URL",                 "options": False, "encrypted": False, "target": False, "alert": False},
-    "email":       {"label": "Email",               "options": False, "encrypted": False, "target": False, "alert": False},
-    "number":      {"label": "Number",              "options": False, "encrypted": False, "target": False, "alert": False},
-    "date":        {"label": "Date",                "options": False, "encrypted": False, "target": False, "alert": False},
-    "date_alert":  {"label": "Expiry / reminder date", "options": False, "encrypted": False, "target": False, "alert": True},
-    "dropdown":    {"label": "Dropdown (single-select)", "options": True, "encrypted": False, "target": False, "alert": False},
-    "multiselect": {"label": "Multi-select",        "options": True,  "encrypted": False, "target": False, "alert": False},
-    "link":        {"label": "Linked record",       "options": False, "encrypted": False, "target": True, "alert": False},
-    "checkbox":    {"label": "Checkbox",            "options": False, "encrypted": False, "target": False, "alert": False},
-    "code":        {"label": "Code (monospace)",    "options": False, "encrypted": False, "target": False, "alert": False},
-    "file":        {"label": "File (image or document)", "options": False, "encrypted": True, "target": False, "alert": False},
+    "text":        {"label": "Text",                "options": False, "encrypted": False, "target": False, "alert": False, "frequency": False},
+    "textarea":    {"label": "Text area",           "options": False, "encrypted": False, "target": False, "alert": False, "frequency": False},
+    "password":    {"label": "Password (encrypted)", "options": False, "encrypted": True, "target": False, "alert": False, "frequency": False},
+    "url":         {"label": "URL",                 "options": False, "encrypted": False, "target": False, "alert": False, "frequency": False},
+    "email":       {"label": "Email",               "options": False, "encrypted": False, "target": False, "alert": False, "frequency": False},
+    "number":      {"label": "Number",              "options": False, "encrypted": False, "target": False, "alert": False, "frequency": False},
+    "cost":        {"label": "Cost (recurring)",    "options": False, "encrypted": False, "target": False, "alert": False, "frequency": True},
+    "date":        {"label": "Date",                "options": False, "encrypted": False, "target": False, "alert": False, "frequency": False},
+    "date_alert":  {"label": "Expiry / reminder date", "options": False, "encrypted": False, "target": False, "alert": True, "frequency": False},
+    "dropdown":    {"label": "Dropdown (single-select)", "options": True, "encrypted": False, "target": False, "alert": False, "frequency": False},
+    "multiselect": {"label": "Multi-select",        "options": True,  "encrypted": False, "target": False, "alert": False, "frequency": False},
+    "link":        {"label": "Linked record",       "options": False, "encrypted": False, "target": True, "alert": False, "frequency": False},
+    "checkbox":    {"label": "Checkbox",            "options": False, "encrypted": False, "target": False, "alert": False, "frequency": False},
+    "code":        {"label": "Code (monospace)",    "options": False, "encrypted": False, "target": False, "alert": False, "frequency": False},
+    "file":        {"label": "File (image or document)", "options": False, "encrypted": True, "target": False, "alert": False, "frequency": False},
 }
 
 DEFAULT_ALERT_DAYS = 30
+
+COST_FREQUENCIES = ("monthly", "yearly", "one_time")
+DEFAULT_FREQUENCY = "monthly"
+FREQUENCY_LABELS = {"monthly": "/mo", "yearly": "/yr", "one_time": "one-time"}
 
 FIELD_TYPE_ORDER: list[str] = list(FIELD_TYPES)
 
@@ -64,3 +73,8 @@ def needs_alert_config(t: str) -> bool:
 def is_date_like(t: str) -> bool:
     """Both date types share the same input widget and YYYY-MM-DD validation."""
     return t in ("date", "date_alert")
+
+
+def needs_frequency(t: str) -> bool:
+    """True for field types configured with a billing cadence (recurring costs)."""
+    return FIELD_TYPES.get(t, {}).get("frequency", False)

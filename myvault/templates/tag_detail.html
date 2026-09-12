@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}#{{ tag['name'] }} · Tags · {{ app_title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>🏷️ {{ tag['name'] }}</h1>
+  <a class="btn btn-ghost" href="{{ url_for('tags.browse') }}">All tags</a>
+</div>
+<p class="muted" style="margin-bottom:.75rem">
+  {{ records|length }} record{{ '' if records|length == 1 else 's' }} tagged “{{ tag['name'] }}”, across every category.
+</p>
+
+{% if not records %}
+  <div class="empty"><p class="empty-title">Nothing tagged this anymore.</p></div>
+{% else %}
+  {% for group in groups %}
+    <div class="ref-group">
+      <h3 class="ref-group-title">{{ group['category_icon'] }} {{ group['category_name'] }}</h3>
+      <div class="ref-grid">
+        {% for r in group['items'] %}
+          <a class="ref-card" href="{{ url_for('records.view', record_id=r['id']) }}">
+            <span class="ref-card-name">{{ r['label'] }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

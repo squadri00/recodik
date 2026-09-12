@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Tags · {{ app_title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Tags</h1>
+</div>
+<p class="muted" style="margin-bottom:.75rem">
+  Records grouped across categories by a shared tag. Add tags from a record's edit form.
+</p>
+
+{% if not tags %}
+  <div class="empty">
+    <p class="empty-title">No tags yet.</p>
+    <p>Open a record and add one or more tags (comma-separated) to start grouping records
+      across categories — e.g. "Q4 renewal" on a Domain, a Hosting plan and a Subscription.</p>
+  </div>
+{% else %}
+  <div class="tag-row">
+    {% for t in tags %}
+      <a class="tag-pill" href="{{ url_for('tags.view', tag_id=t['id']) }}">
+        {{ t['name'] }} <span class="tag-count">{{ t['record_count'] }}</span>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

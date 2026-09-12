@@ -7,6 +7,7 @@ document.querySelectorAll("[data-field-form]").forEach(function (form) {
   var optionsWrap = form.querySelector("[data-options-wrap]");
   var targetWrap = form.querySelector("[data-target-wrap]");
   var alertWrap = form.querySelector("[data-alert-wrap]");
+  var frequencyWrap = form.querySelector("[data-frequency-wrap]");
   var encryptWrap = form.querySelector("[data-encrypt-wrap]");
   if (!select) return;
   function sync() {
@@ -14,6 +15,7 @@ document.querySelectorAll("[data-field-form]").forEach(function (form) {
     if (optionsWrap) optionsWrap.hidden = !(opt && opt.dataset.options === "1");
     if (targetWrap) targetWrap.hidden = !(opt && opt.dataset.target === "1");
     if (alertWrap) alertWrap.hidden = !(opt && opt.dataset.alert === "1");
+    if (frequencyWrap) frequencyWrap.hidden = !(opt && opt.dataset.frequency === "1");
     if (encryptWrap) encryptWrap.hidden = !(opt && opt.value === "password");
   }
   select.addEventListener("change", sync);

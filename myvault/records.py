@@ -32,7 +32,7 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-from . import alerts, audit, crypto, search
+from . import alerts, audit, costs, crypto, search, tags
 from .auth import login_required
 from .db import get_db
 from .fieldtypes import is_date_like, is_encrypted
@@ -172,7 +172,7 @@ def parse_form(fields, form, files, existing: dict | None) -> tuple[dict, list[s
                 data[key] = ""
             else:
                 data[key] = int(raw)
-        elif ftype == "number":
+        elif ftype in ("number", "cost"):
             try:
                 float(raw)
             except ValueError:
@@ -227,7 +227,7 @@ def display_cell(field, data: dict) -> dict:
     value = data.get(key)
     cell = {"type": ftype, "label": field["label"], "key": key,
             "encrypted": is_encrypted(ftype), "has_value": False, "raw": None,
-            "items": None, "checked": False, "link": None, "file": None}
+            "items": None, "checked": False, "link": None, "file": None, "frequency": None}
     if ftype == "file":
         file_row = get_db().execute(
             "SELECT id, filename, content_type, size_bytes FROM files WHERE id = ?",
@@ -253,6 +253,8 @@ def display_cell(field, data: dict) -> dict:
         cell["items"] = value or []
         cell["has_value"] = bool(cell["items"])
         return cell
+    if ftype == "cost":
+        cell["frequency"] = costs.cost_frequency(field)
     if value not in (None, ""):
         cell["raw"] = value
         cell["has_value"] = True
@@ -314,7 +316,7 @@ def file_meta_for(fields, data: dict) -> dict:
 _SORT_FILTER_KIND = {
     "text": "text", "textarea": "text", "url": "text", "email": "text",
     "code": "text", "date": "text", "date_alert": "text", "number": "number",
-    "dropdown": "select", "checkbox": "select", "link": "select",
+    "cost": "number", "dropdown": "select", "checkbox": "select", "link": "select",
 }
 
 
@@ -451,7 +453,7 @@ def create(category_id: int):
                                    values=form_values(fields, request.form, True),
                                    link_options=link_options_for(fields),
                                    file_meta=file_meta_for(fields, {}),
-                                   mode="new")
+                                   mode="new", tags_value=request.form.get("tags", ""))
         db = get_db()
         cur = db.execute(
             "INSERT INTO records(category_id, data, created_by, created_at, updated_at) "
@@ -463,6 +465,7 @@ def create(category_id: int):
             _save_pending_files(db, record_id, data, pending)
             db.execute("UPDATE records SET data = ? WHERE id = ?",
                        (json.dumps(data), record_id))
+        tags.set_record_tags(db, record_id, tags.parse_tags_input(request.form.get("tags", "")))
         search.reindex_record(db, record_id)
         audit.log("record_create", category_id=category_id, category_name=category["name"],
                   record_id=record_id, record_label=record_label(category_id, data))
@@ -473,7 +476,7 @@ def create(category_id: int):
     return render_template("record_form.html", category=category, fields=fields,
                            values=form_values(fields, {}, False),
                            link_options=link_options_for(fields),
-                           file_meta=file_meta_for(fields, {}), mode="new")
+                           file_meta=file_meta_for(fields, {}), mode="new", tags_value="")
 
 
 @bp.route("/<int:record_id>")
@@ -485,7 +488,8 @@ def view(record_id: int):
     refs = referencing_records(category["id"], record_id)
     return render_template("record_detail.html", category=category,
                            record=record_view(record, fields),
-                           referenced_by=refs, reference_groups=group_references(refs))
+                           referenced_by=refs, reference_groups=group_references(refs),
+                           record_tags=tags.get_record_tags(record_id))
 
 
 @bp.route("/<int:record_id>/edit", methods=("GET", "POST"))
@@ -509,7 +513,7 @@ def edit(record_id: int):
                                    link_options=link_options_for(fields),
                                    file_meta=file_meta_for(fields, existing),
                                    mode="edit", record_id=record_id,
-                                   existing=existing)
+                                   existing=existing, tags_value=request.form.get("tags", ""))
         db = get_db()
         if pending:
             _save_pending_files(db, record_id, data, pending)
@@ -518,6 +522,7 @@ def edit(record_id: int):
             "UPDATE records SET data = ?, updated_at = ? WHERE id = ?",
             (json.dumps(data), now_iso(), record_id),
         )
+        tags.set_record_tags(db, record_id, tags.parse_tags_input(request.form.get("tags", "")))
         search.reindex_record(db, record_id)
         audit.log("record_update", category_id=category["id"], category_name=category["name"],
                   record_id=record_id, record_label=record_label(category["id"], data))
@@ -530,7 +535,8 @@ def edit(record_id: int):
                            values=form_values(fields, existing, False),
                            link_options=link_options_for(fields),
                            file_meta=file_meta_for(fields, existing), mode="edit",
-                           record_id=record_id, existing=existing)
+                           record_id=record_id, existing=existing,
+                           tags_value=tags.tags_input_value(record_id))
 
 
 @bp.route("/<int:record_id>/delete", methods=("POST",))
@@ -656,6 +662,7 @@ def clone(record_id: int):
     if changed:
         db.execute("UPDATE records SET data = ? WHERE id = ?", (json.dumps(data), new_id))
 
+    tags.set_record_tags(db, new_id, [t["name"] for t in tags.get_record_tags(record_id)])
     search.reindex_record(db, new_id)
     audit.log("record_clone", category_id=category["id"], category_name=category["name"],
               record_id=new_id, record_label=record_label(category["id"], data),

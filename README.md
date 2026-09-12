@@ -17,7 +17,7 @@ the engine. Password-type fields and uploaded files are **encrypted at rest**.
 | First-run setup | Create the first admin + a master password (derives the encryption key). |
 | Categories | Create / rename / delete / reorder; emoji icon; admin-only. |
 | Field builder | Per category: add / edit / remove / reorder fields. 14 field types. |
-| Field types | text, textarea (Markdown), password (encrypted), url, email, number, date, **expiry/reminder date**, dropdown, multi-select, **linked record**, **file**, checkbox, code. |
+| Field types | text, textarea (Markdown), password (encrypted), url, email, number, **cost (recurring)**, date, **expiry/reminder date**, dropdown, multi-select, **linked record**, **file**, checkbox, code. |
 | Linked records (v2) | A `link` field points each record at one record in another category; renders as a dropdown of that category's records and a clickable link. The target record's detail page lists everything that references it. |
 | File attachments (v3) | A `file` field uploads one image or document per record, encrypted at rest in the same `.sqlite3` file (no separate folder to back up). Images preview inline; everything else downloads. Content requires the vault unlocked; filename/size stay visible either way. |
 | Text formatting | A small toolbar on `textarea` fields inserts Markdown (bold, italic, headings, lists, links, code); rendered as sanitized HTML on the record's detail page. |
@@ -33,6 +33,8 @@ the engine. Password-type fields and uploaded files are **encrypted at rest**.
 | Activity log (v8) | Settings → **Activity log**: who created, edited, trashed, restored, purged, or cloned a record — or created/deleted a category — and when. Answers "did someone delete this?" |
 | Quick-add (v8) | A **+ Add** button in the header, on every page, opens every category in one dropdown — no need to navigate into a category first to add a record. |
 | Clone (v8) | A **Clone** button on a record's detail page duplicates it (including any attached file, as its own independent copy) into a new record in the same category, ready to edit. |
+| Cost rollup (v9) | A `Cost (recurring)` field type (with a Monthly / Yearly / One-time billing frequency, set once per field) rolls up on the **Costs** dashboard — one monthly and annual total across every category, plus a per-category breakdown. |
+| Cross-category tags (v9) | Add free-form, comma-separated tags to any record; the **Tags** page groups every record carrying a given tag across *all* categories — e.g. one "Q4 renewal" tag spanning a Domain, a Hosting plan and a Subscription. Independent of `link` fields, which are a fixed one-category relationship an admin configures ahead of time. |
 | Users | Admin manages members; members edit records but can't restructure categories. |
 
 Relational / linked-record fields shipped in **v2** as the `link` field type
@@ -173,8 +175,12 @@ badge), full-database backup/restore (validation, the safety snapshot, session
 reset), sort/filter on record lists, the calendar view (month/year rollover,
 per-category colors, alert-tier styling), trash/restore/purge (search, links
 and back-references all hiding a trashed record), the audit log, record
-cloning (including its own copy of an attached file), and every schema
-migration along the way (v1→v2→v3→v4) on a hand-built legacy database.
+cloning (including its own copy of an attached file), the cost rollup
+dashboard (monthly/yearly-equivalent totals, trashed records excluded,
+template export/import round-tripping the billing frequency), cross-category
+tags (attach, replace, cascade on purge, searchable, carried over by clone),
+and every schema migration along the way (v1→v2→v3→v4→v5) on a hand-built
+legacy database.
 
 ## Project layout
 
@@ -195,6 +201,8 @@ myvault/            application package (Flask app factory + blueprints)
   richtext.py       Markdown -> sanitized HTML for textarea fields
   calendar_view.py  v7: month-grid calendar of every date-like field
   audit.py          v8: append-only audit trail for record/category actions
+  costs.py          v9: cost rollup dashboard (the `cost` field type)
+  tags.py           v9: cross-category tags
   schema.sql        versioned schema (applied on a fresh DB)
   templates/  static/
 run.py              dev server entry

@@ -9,7 +9,7 @@ import os
 
 from flask import Flask, g, redirect, render_template, url_for
 
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 
 
 def create_app(test_config: dict | None = None) -> Flask:
@@ -79,6 +79,14 @@ def create_app(test_config: dict | None = None) -> Flask:
     from . import calendar_view
 
     app.register_blueprint(calendar_view.bp)
+
+    from . import costs
+
+    app.register_blueprint(costs.bp)
+
+    from . import tags
+
+    app.register_blueprint(tags.bp)
 
     from . import templates_io
 
