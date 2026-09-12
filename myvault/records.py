@@ -304,6 +304,65 @@ def file_meta_for(fields, data: dict) -> dict:
     }
 
 
+# --- list-view sort & filter -------------------------------------------------
+# `multiselect` (a record can match/hold several values at once), `password`
+# and `file` (hidden content, nothing meaningful to compare) are deliberately
+# left out of both -- there's no well-defined single order or match for them.
+_SORT_FILTER_KIND = {
+    "text": "text", "textarea": "text", "url": "text", "email": "text",
+    "code": "text", "date": "text", "date_alert": "text", "number": "number",
+    "dropdown": "select", "checkbox": "select", "link": "select",
+}
+
+
+def _sf_kind(field_type: str) -> str | None:
+    return _SORT_FILTER_KIND.get(field_type)
+
+
+def _sort_key(cell: dict, kind: str):
+    if kind == "number":
+        try:
+            return (0, float(cell.get("raw") or 0))
+        except (TypeError, ValueError):
+            return (1, 0.0)  # unparsable numbers sort after real ones, not crash
+    if kind == "select":
+        if cell["type"] == "checkbox":
+            return (0, 1 if cell.get("checked") else 0)
+        if cell["type"] == "link":
+            label = (cell.get("link") or {}).get("label") or ""
+            return (0 if cell.get("link") else 1, label.lower())
+        return (0 if cell.get("has_value") else 1, (cell.get("raw") or "").lower())
+    return (0 if cell.get("has_value") else 1, (cell.get("raw") or "").lower())
+
+
+def _matches_filter(cell: dict, kind: str, value: str) -> bool:
+    if kind == "text":
+        return value.lower() in (cell.get("raw") or "").lower()
+    if kind == "number":
+        return value.lower() in (cell.get("raw") or "").lower()
+    if kind == "select":
+        if cell["type"] == "checkbox":
+            return bool(cell.get("checked")) == (value == "1")
+        if cell["type"] == "link":
+            link = cell.get("link")
+            return str(link["id"]) == value if link else False
+        return cell.get("raw") == value
+    return True
+
+
+def filter_options_for(fields) -> dict:
+    """field_key -> choices for a filter <select>, for dropdown/link fields."""
+    out: dict = {}
+    for f in fields:
+        if f["field_type"] == "dropdown":
+            out[f["field_key"]] = [(o, o) for o in json.loads(f["options"] or "[]")]
+        elif f["field_type"] == "link":
+            out[f["field_key"]] = [
+                (str(c["id"]), c["label"]) for c in link_choices(link_target_id(f))
+            ]
+    return out
+
+
 # --- routes ---------------------------------------------------------------
 
 @bp.route("/category/<int:category_id>")
@@ -316,8 +375,42 @@ def list_records(category_id: int):
         (category_id,),
     ).fetchall()
     records = [record_view(r, fields) for r in rows]
-    return render_template("records_list.html", category=category, fields=fields,
-                           records=records)
+    total_count = len(records)
+
+    # --- filters: ?f_<field_key>=value, one per sortable/filterable field ---
+    active_filters = {
+        f["field_key"]: request.args.get(f"f_{f['field_key']}", "").strip()
+        for f in fields if _sf_kind(f["field_type"])
+    }
+    active_filters = {k: v for k, v in active_filters.items() if v}
+    if active_filters:
+        by_key = {f["field_key"]: (i, _sf_kind(f["field_type"]))
+                  for i, f in enumerate(fields)}
+        records = [
+            r for r in records
+            if all(_matches_filter(r["cells"][by_key[k][0]], by_key[k][1], v)
+                  for k, v in active_filters.items())
+        ]
+
+    # --- sort: ?sort=<field_key>&dir=asc|desc ---
+    sort_key = request.args.get("sort", "")
+    sort_dir = "desc" if request.args.get("dir") == "desc" else "asc"
+    sort_idx = next((i for i, f in enumerate(fields) if f["field_key"] == sort_key), None)
+    if sort_idx is not None:
+        kind = _sf_kind(fields[sort_idx]["field_type"])
+        if kind:
+            records.sort(key=lambda r: _sort_key(r["cells"][sort_idx], kind),
+                        reverse=(sort_dir == "desc"))
+        else:
+            sort_key = ""
+
+    return render_template(
+        "records_list.html", category=category, fields=fields, records=records,
+        total_count=total_count, sort=sort_key, sort_dir=sort_dir,
+        active_filters=active_filters, filter_options=filter_options_for(fields),
+        filter_query_args={f"f_{k}": v for k, v in active_filters.items()},
+        sortable=lambda ft: bool(_sf_kind(ft)),
+    )
 
 
 @bp.route("/category/<int:category_id>/new", methods=("GET", "POST"))

@@ -211,6 +211,25 @@ textarea.mono, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consola
 .rich-text pre { background: var(--bg); padding: .6rem .8rem; border-radius: 8px; overflow-x: auto; }
 .rich-text pre code { background: none; padding: 0; }
 
+/* --- record list: filter bar + sortable headers --- */
+.filter-bar {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: .7rem 1rem; margin-bottom: 1rem;
+}
+.filter-bar summary { cursor: pointer; font-weight: 600; font-size: .9rem; }
+.filter-bar[open] summary { margin-bottom: .8rem; }
+.filter-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: .7rem; align-items: end;
+}
+.filter-grid label { margin: 0; font-size: .82rem; font-weight: 600; }
+.filter-actions { display: flex; gap: .5rem; align-self: end; }
+.filter-actions .btn-primary { margin-top: 0; }
+
+.sort-link { color: var(--text); display: inline-flex; align-items: center; gap: .25rem; }
+.sort-link:hover { color: var(--primary); text-decoration: none; }
+.sort-arrow { color: var(--primary); font-size: .75em; }
+
 .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
 .table-scroll .tbl { min-width: 100%; }
 .table-scroll .tbl th, .table-scroll .tbl td { white-space: nowrap; }

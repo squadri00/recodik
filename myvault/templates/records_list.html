@@ -18,17 +18,71 @@
       <a class="btn btn-primary" href="{{ url_for('categories.edit', category_id=category['id']) }}">Add fields</a>
     {% endif %}
   </div>
-{% elif not records %}
+{% elif total_count == 0 %}
   <div class="empty">
     <p class="empty-title">No records yet.</p>
     <a class="btn btn-primary" href="{{ url_for('records.create', category_id=category['id']) }}">Add the first one</a>
   </div>
 {% else %}
+  {% set filterable_fields = fields | selectattr("field_type", "in",
+      ["text","textarea","url","email","code","date","date_alert","number","dropdown","checkbox","link"]) | list %}
+  {% if filterable_fields %}
+  <details class="filter-bar" {{ 'open' if active_filters }}>
+    <summary>Filter{% if active_filters %} ({{ active_filters|length }} active){% endif %}</summary>
+    <form method="get" class="filter-grid">
+      <input type="hidden" name="sort" value="{{ sort }}">
+      <input type="hidden" name="dir" value="{{ sort_dir }}">
+      {% for f in filterable_fields %}
+        <label>{{ f['label'] }}
+          {% if f['field_type'] == 'checkbox' %}
+            <select name="f_{{ f['field_key'] }}">
+              <option value="">— any —</option>
+              <option value="1" {{ 'selected' if active_filters.get(f['field_key']) == '1' }}>Yes</option>
+              <option value="0" {{ 'selected' if active_filters.get(f['field_key']) == '0' }}>No</option>
+            </select>
+          {% elif f['field_type'] in ('dropdown', 'link') %}
+            <select name="f_{{ f['field_key'] }}">
+              <option value="">— any —</option>
+              {% for value, label in filter_options.get(f['field_key'], []) %}
+                <option value="{{ value }}" {{ 'selected' if active_filters.get(f['field_key']) == value }}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          {% else %}
+            <input type="text" name="f_{{ f['field_key'] }}" value="{{ active_filters.get(f['field_key'], '') }}"
+                   placeholder="Contains…">
+          {% endif %}
+        </label>
+      {% endfor %}
+      <div class="filter-actions">
+        <button class="btn btn-primary" type="submit">Apply</button>
+        <a class="btn btn-ghost" href="{{ url_for('records.list_records', category_id=category['id']) }}">Clear</a>
+      </div>
+    </form>
+  </details>
+  {% endif %}
+
+  {% if not records %}
+    <div class="empty">
+      <p class="empty-title">No records match these filters.</p>
+      <a class="btn" href="{{ url_for('records.list_records', category_id=category['id']) }}">Clear filters</a>
+    </div>
+  {% else %}
   <div class="table-scroll">
   <table class="tbl tbl-records" data-reveal-form>
     <thead>
       <tr>
-        {% for f in fields %}<th>{{ f['label'] }}</th>{% endfor %}
+        {% for f in fields %}
+          <th>
+            {% if sortable(f['field_type']) %}
+              {% set next_dir = 'desc' if sort == f['field_key'] and sort_dir == 'asc' else 'asc' %}
+              <a class="sort-link" href="{{ url_for('records.list_records', category_id=category['id'], sort=f['field_key'], dir=next_dir, **filter_query_args) }}">
+                {{ f['label'] }}{% if sort == f['field_key'] %} <span class="sort-arrow">{{ '▲' if sort_dir == 'asc' else '▼' }}</span>{% endif %}
+              </a>
+            {% else %}
+              {{ f['label'] }}
+            {% endif %}
+          </th>
+        {% endfor %}
         <th class="sticky-col">Actions</th>
       </tr>
     </thead>
@@ -47,7 +101,9 @@
   </table>
   </div>
   <p class="muted" style="margin-top:.75rem">
-    {{ records|length }} record{{ '' if records|length == 1 else 's' }}. Open a record to edit or delete it.
+    {{ records|length }} record{{ '' if records|length == 1 else 's' }}
+    {%- if active_filters %} of {{ total_count }}{% endif %}. Open a record to edit or delete it.
   </p>
+  {% endif %}
 {% endif %}
 {% endblock %}
