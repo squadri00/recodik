@@ -76,6 +76,10 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     app.register_blueprint(search.bp)
 
+    from . import calendar_view
+
+    app.register_blueprint(calendar_view.bp)
+
     from . import templates_io
 
     app.register_blueprint(templates_io.bp)

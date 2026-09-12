@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Calendar · {{ app_title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ month_name }} {{ year }}</h1>
+  <div class="row-actions">
+    <a class="btn" href="{{ url_for('calendar_view.view', year=prev_year, month=prev_month) }}">&larr; Prev</a>
+    <a class="btn" href="{{ url_for('calendar_view.view') }}">Today</a>
+    <a class="btn" href="{{ url_for('calendar_view.view', year=next_year, month=next_month) }}">Next &rarr;</a>
+  </div>
+</div>
+
+<p class="muted" style="margin-bottom:.75rem">
+  Every <code>Date</code> and <code>Expiry / reminder date</code> field, across every category. Read-only — open a record to change its date.
+</p>
+
+<div class="cal-wrap">
+<div class="cal-grid">
+  {% for wd in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] %}
+    <div class="cal-weekday">{{ wd }}</div>
+  {% endfor %}
+
+  {% for week in weeks %}
+    {% for day in week %}
+      <div class="cal-day {{ '' if day['in_month'] else 'cal-out' }} {{ 'cal-today' if day['is_today'] }}">
+        <span class="cal-daynum">{{ day['date'].day }}</span>
+        {% for ev in day['events'] %}
+          <a class="cal-tag cal-c{{ ev['color'] }}{% if ev['tier'] %} cal-tag-{{ ev['tier'] }}{% endif %}"
+             href="{{ url_for('records.view', record_id=ev['record_id']) }}"
+             title="{{ ev['category_name'] }} · {{ ev['field_label'] }}{% if ev['tier'] == 'overdue' %} · overdue{% elif ev['tier'] == 'upcoming' %} · reminder active{% endif %}">
+            {%- if ev['tier'] %}⚠ {% endif -%}
+            <span class="cal-tag-icon">{{ ev['category_icon'] }}</span>
+            <span class="cal-tag-label">{{ ev['label'] }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  {% endfor %}
+</div>
+</div>
+{% endblock %}

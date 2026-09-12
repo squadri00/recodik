@@ -13,6 +13,7 @@
   <a class="brand" href="{{ url_for('index') }}">🗄️ {{ app_title }}</a>
   <nav class="topnav">
     <a href="{{ url_for('index') }}">Dashboard</a>
+    <a href="{{ url_for('calendar_view.view') }}">Calendar</a>
     <a href="{{ url_for('search.search_page') }}">Search</a>
     {% if current_user['role'] == 'admin' %}
       <a href="{{ url_for('categories.manage') }}">Categories</a>
