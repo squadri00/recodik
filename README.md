@@ -28,6 +28,7 @@ the engine. Password-type fields and uploaded files are **encrypted at rest**.
 | Templates | Export a category's field definitions to JSON; import to re-create it elsewhere. |
 | Backup & restore (v5) | Settings → download a full, consistent snapshot of the entire vault, or restore one — see [Backups](#backups) below. |
 | Sort & filter (v6) | Click a record-list column header to sort; a filter bar above it narrows by any column (text "contains", or a dropdown for choice/checkbox/linked-record fields). Both are shareable URLs. |
+| Calendar view (v7) | A month grid plotting every `date` and `date_alert` field, from every category, on its actual day — a domain's expiry, an invoice due date, a calendar event, all in one screen. Each category gets its own tag color; a `date_alert` tag carries the same overdue/upcoming styling as the header badge. Read-only; click a tag to open the record. |
 | Users | Admin manages members; members edit records but can't restructure categories. |
 
 Relational / linked-record fields shipped in **v2** as the `link` field type
@@ -165,8 +166,9 @@ attachments (upload/replace/remove, size caps, inline vs. download, cascade
 delete), converting a field to encrypted in place, Markdown rendering (incl.
 the XSS guards), expiry/reminder alerts (escalation, dismissal, the header
 badge), full-database backup/restore (validation, the safety snapshot, session
-reset), and every schema migration along the way (v1→v2→v3) on a hand-built
-legacy database.
+reset), sort/filter on record lists, the calendar view (month/year rollover,
+per-category colors, alert-tier styling), and every schema migration along the
+way (v1→v2→v3) on a hand-built legacy database.
 
 ## Project layout
 
@@ -185,6 +187,7 @@ myvault/            application package (Flask app factory + blueprints)
   alerts.py         v4: expiry/reminder alert computation + dismissal
   backup.py         v5: full-database backup download + validated restore
   richtext.py       Markdown -> sanitized HTML for textarea fields
+  calendar_view.py  v7: month-grid calendar of every date-like field
   schema.sql        versioned schema (applied on a fresh DB)
   templates/  static/
 run.py              dev server entry
