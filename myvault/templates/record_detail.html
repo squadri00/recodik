@@ -25,15 +25,20 @@
 
 {% if referenced_by %}
 <div class="card" style="margin-top:1.25rem">
-  <h2>Referenced by</h2>
-  <ul class="reflist">
-    {% for r in referenced_by %}
-      <li>
-        <a href="{{ url_for('records.view', record_id=r['id']) }}">{{ r['label'] }}</a>
-        <span class="muted">— {{ r['category_name'] }} · via {{ r['via'] }}</span>
-      </li>
-    {% endfor %}
-  </ul>
+  <h2>Referenced by <span class="muted">({{ referenced_by|length }})</span></h2>
+  {% for group in reference_groups %}
+    <div class="ref-group">
+      <h3 class="ref-group-title">{{ group['category_icon'] or '📁' }} {{ group['category_name'] }}</h3>
+      <div class="ref-grid">
+        {% for r in group['items'] %}
+          <a class="ref-card" href="{{ url_for('records.view', record_id=r['id']) }}">
+            <span class="ref-card-name">{{ r['label'] }}</span>
+            <span class="ref-card-via">via {{ r['via'] }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
 </div>
 {% endif %}
 {% endblock %}

@@ -104,10 +104,12 @@ def resolve_link(record_id: int) -> dict | None:
 
 
 def referencing_records(category_id: int, record_id: int) -> list[dict]:
-    """Records in any category whose `link` field points at this record."""
+    """Records in any category whose `link` field points at this record,
+    sorted for a grouped-by-category display (see record_detail.html)."""
     db = get_db()
     link_fields = db.execute(
-        "SELECT f.*, c.name AS category_name "
+        "SELECT f.*, c.name AS category_name, c.icon AS category_icon, "
+        "c.sort_order AS category_sort "
         "FROM fields f JOIN categories c ON c.id = f.category_id "
         "WHERE f.field_type = 'link'"
     ).fetchall()
@@ -127,11 +129,15 @@ def referencing_records(category_id: int, record_id: int) -> list[dict]:
             except ValueError:
                 d = {}
             out.append({
+                "category_id": lf["category_id"],
                 "category_name": lf["category_name"],
+                "category_icon": lf["category_icon"] or "📁",
+                "category_sort": lf["category_sort"],
                 "via": lf["label"],
                 "id": r["id"],
                 "label": record_label(r["category_id"], d) or f"Record #{r['id']}",
             })
+    out.sort(key=lambda r: (r["category_sort"], r["category_name"], r["label"].lower()))
     return out
 
 

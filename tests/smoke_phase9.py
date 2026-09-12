@@ -106,6 +106,16 @@ r = c.get(f"/records/{shop}")
 assert b"Referenced by" in r.data and b"Checkout rebuild" in r.data
 print("OK  the target record shows a 'Referenced by' list of records linking to it")
 
+# --- grouped by category: a second project referencing the same customer
+# lands under ONE shared "Projects" subheading, as two cards ---
+c.post(f"/records/category/{projects}/new",
+       data={"project": "Marketing Site", "customer": str(acme)}, follow_redirects=True)
+html = c.get(f"/records/{acme}").get_data(as_text=True)
+assert html.count("ref-group-title") == 1  # Projects is the only referencing category
+assert html.count('class="ref-card"') == 2  # Online Shop + Marketing Site, one group
+assert "(2)" in html  # the "Referenced by (2)" count
+print("OK  references from the same category are grouped under one subheading")
+
 # --- search resolves the link to the parent's label ---
 r = c.get("/search", query_string={"q": "Acme"})
 body = r.get_data(as_text=True)

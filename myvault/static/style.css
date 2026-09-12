@@ -260,9 +260,21 @@ thead .sticky-col { z-index: 1; }
 .detail dt { color: var(--muted); font-weight: 600; }
 .detail dd { margin: 0; word-break: break-word; }
 
-.reflist { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
-.reflist li { font-size: .92rem; }
-.reflist .muted { font-size: .85rem; }
+.ref-group { margin-top: 1.1rem; }
+.ref-group:first-of-type { margin-top: .8rem; }
+.ref-group-title {
+  font-size: .74rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--muted); margin: 0 0 .5rem;
+}
+.ref-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: .6rem; }
+.ref-card {
+  display: flex; flex-direction: column; gap: .2rem;
+  padding: .6rem .75rem; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg); color: var(--text);
+}
+.ref-card:hover { border-color: var(--primary); text-decoration: none; }
+.ref-card-name { font-weight: 600; }
+.ref-card-via { font-size: .78rem; color: var(--muted); }
 
 .file-thumb {
   display: block; max-width: 64px; max-height: 64px; width: auto; height: auto;

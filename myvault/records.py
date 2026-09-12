@@ -350,6 +350,19 @@ def _matches_filter(cell: dict, kind: str, value: str) -> bool:
     return True
 
 
+def group_references(refs: list[dict]) -> list[dict]:
+    """referencing_records()'s flat, pre-sorted list -> one group per category,
+    in the order categories first appear (already category_sort order)."""
+    groups: dict[int, dict] = {}
+    for r in refs:
+        cid = r["category_id"]
+        if cid not in groups:
+            groups[cid] = {"category_id": cid, "category_name": r["category_name"],
+                           "category_icon": r["category_icon"], "items": []}
+        groups[cid]["items"].append(r)
+    return list(groups.values())
+
+
 def filter_options_for(fields) -> dict:
     """field_key -> choices for a filter <select>, for dropdown/link fields."""
     out: dict = {}
@@ -463,9 +476,10 @@ def view(record_id: int):
     record = _record_or_404(record_id)
     category = _category_or_404(record["category_id"])
     fields = get_fields(category["id"])
+    refs = referencing_records(category["id"], record_id)
     return render_template("record_detail.html", category=category,
                            record=record_view(record, fields),
-                           referenced_by=referencing_records(category["id"], record_id))
+                           referenced_by=refs, reference_groups=group_references(refs))
 
 
 @bp.route("/<int:record_id>/edit", methods=("GET", "POST"))
