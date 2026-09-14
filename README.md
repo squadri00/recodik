@@ -35,6 +35,7 @@ the engine. Password-type fields and uploaded files are **encrypted at rest**.
 | Clone (v8) | A **Clone** button on a record's detail page duplicates it (including any attached file, as its own independent copy) into a new record in the same category, ready to edit. |
 | Cost rollup (v9) | A `Cost (recurring)` field type (with a Monthly / Yearly / One-time billing frequency, set once per field) rolls up on the **Costs** dashboard — one monthly and annual total across every category, plus a per-category breakdown. |
 | Cross-category tags (v9) | Add free-form, comma-separated tags to any record; the **Tags** page groups every record carrying a given tag across *all* categories — e.g. one "Q4 renewal" tag spanning a Domain, a Hosting plan and a Subscription. Independent of `link` fields, which are a fixed one-category relationship an admin configures ahead of time. |
+| Dashboard summary (v10) | The dashboard leads with up to three cards — active alerts, monthly/annual cost totals, and (admin-only) recent activity — before the category grid, so what needs attention is visible without visiting each page separately. Any card with nothing to show is simply omitted. |
 | Users | Admin manages members; members edit records but can't restructure categories. |
 
 Relational / linked-record fields shipped in **v2** as the `link` field type
@@ -179,8 +180,9 @@ cloning (including its own copy of an attached file), the cost rollup
 dashboard (monthly/yearly-equivalent totals, trashed records excluded,
 template export/import round-tripping the billing frequency), cross-category
 tags (attach, replace, cascade on purge, searchable, carried over by clone),
-and every schema migration along the way (v1→v2→v3→v4→v5) on a hand-built
-legacy database.
+the dashboard summary cards (empty-state, correct totals, admin-only
+activity gating), and every schema migration along the way (v1→v2→v3→v4→v5)
+on a hand-built legacy database.
 
 ## Project layout
 
