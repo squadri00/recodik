@@ -412,3 +412,20 @@ thead .sticky-col { z-index: 1; }
 }
 .snip { color: var(--text); }
 .snip mark, .results mark { background: var(--warn-bg); color: var(--warn-ink); }
+
+/* --- help guide --- */
+kbd {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 5px;
+  padding: .05rem .4rem; font-size: .82em; font-family: inherit; box-shadow: 0 1px 0 var(--border);
+}
+.help-quickstart { border-color: var(--primary); }
+.help-steps { margin: .6rem 0 0; padding-left: 1.3rem; display: grid; gap: .6rem; }
+.help-steps li { padding-left: .2rem; }
+.help-section { margin-top: 1.25rem; }
+.help-section h2 { display: flex; align-items: baseline; gap: .5rem; }
+.help-toc { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem; margin-top: .5rem; }
+.help-toc h3 { margin-bottom: .4rem; }
+.help-toc ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .35rem; font-size: .9rem; }
+.help-faq { margin: .6rem 0 0; display: grid; gap: 1rem; }
+.help-faq dt { font-weight: 700; }
+.help-faq dd { margin: .3rem 0 0; color: var(--muted); }

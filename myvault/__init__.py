@@ -9,7 +9,7 @@ import os
 
 from flask import Flask, g, redirect, render_template, url_for
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 
 
 def create_app(test_config: dict | None = None) -> Flask:
@@ -97,6 +97,10 @@ def create_app(test_config: dict | None = None) -> Flask:
     from . import settings
 
     app.register_blueprint(settings.bp)
+
+    from . import help as help_module
+
+    app.register_blueprint(help_module.bp)
 
     @app.route("/")
     def index():

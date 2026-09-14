@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+{% block title %}Help · {{ app_title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Help &amp; user guide</h1>
+</div>
+<p class="muted" style="margin-bottom:1.25rem">
+  Everything {{ app_title }} can do, explained in plain English. Use
+  <kbd>Ctrl</kbd>+<kbd>F</kbd> (or <kbd>Cmd</kbd>+<kbd>F</kbd> on a Mac) to jump
+  straight to a word, or click any topic below.
+</p>
+
+<div class="card help-quickstart">
+  <h2 id="quick-start">Quick start — your first 5 minutes</h2>
+  <p>The whole app is built around one idea: <strong>you decide what to store,
+    not the other way around.</strong> Here's the fastest way to see it work.</p>
+  <ol class="help-steps">
+    <li><strong>Create a category.</strong> A category is like a labeled drawer —
+      "Customers", "Domains", "Passwords", anything you like. Click
+      <strong>New category</strong> on the dashboard, give it a name and an
+      emoji icon, and save.</li>
+    <li><strong>Add a few fields.</strong> Fields are the questions each record
+      in that drawer will answer — a Name, an Email, a Phone number. Open your
+      new category's <strong>Edit fields</strong> page and add two or three.</li>
+    <li><strong>Add your first record.</strong> Go back to the category and
+      click <strong>New record</strong> (or use the <strong>+ Add</strong>
+      button in the header from anywhere). Fill in what you know and save.</li>
+    <li><strong>Open it, edit it, find it.</strong> Click the record to see it,
+      <strong>Edit</strong> to change it, or use the <strong>Search</strong> box
+      in the header to find it by anything you typed into it.</li>
+    <li><strong>That's it.</strong> Everything else in this app — tags, search,
+      the calendar, cost totals, reminders — is built on top of that same
+      simple loop: categories hold fields, fields hold records.</li>
+  </ol>
+</div>
+
+<div class="card" style="margin-top:1.25rem">
+  <h2>Contents</h2>
+  <div class="help-toc">
+    <div>
+      <h3>The basics</h3>
+      <ul>
+        <li><a href="#getting-started">Getting started &amp; signing in</a></li>
+        <li><a href="#categories">Categories</a></li>
+        <li><a href="#fields">Fields &amp; field types</a></li>
+        <li><a href="#records">Adding, editing &amp; deleting records</a></li>
+        <li><a href="#quick-add">The quick-add button</a></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Connecting your data</h3>
+      <ul>
+        <li><a href="#linked-records">Linked records</a></li>
+        <li><a href="#tags">Cross-category tags</a></li>
+        <li><a href="#files">File attachments</a></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Keeping things safe</h3>
+      <ul>
+        <li><a href="#passwords-vault">Passwords &amp; unlocking the vault</a></li>
+        <li><a href="#trash">Trash — undoing a delete</a></li>
+        <li><a href="#backup">Backup &amp; restore <span class="muted">(admin)</span></a></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Finding &amp; tracking things</h3>
+      <ul>
+        <li><a href="#search">Search</a></li>
+        <li><a href="#sort-filter">Sort &amp; filter</a></li>
+        <li><a href="#alerts">Expiry &amp; reminder alerts</a></li>
+        <li><a href="#calendar">Calendar view</a></li>
+        <li><a href="#costs">Costs dashboard</a></li>
+        <li><a href="#dashboard-summary">The dashboard summary</a></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Running the vault</h3>
+      <ul>
+        <li><a href="#activity-log">Activity log <span class="muted">(admin)</span></a></li>
+        <li><a href="#templates">Templates <span class="muted">(admin)</span></a></li>
+        <li><a href="#users">Users &amp; roles <span class="muted">(admin)</span></a></li>
+        <li><a href="#troubleshooting">Common questions</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<div class="card help-section">
+  <h2 id="getting-started">Getting started &amp; signing in</h2>
+  <p>The very first time anyone opens {{ app_title }}, it asks you to create
+    two separate things — don't mix them up:</p>
+  <ul>
+    <li><strong>Your account username &amp; password</strong> — this is what
+      you type in every time to sign in, like any other website.</li>
+    <li><strong>The master password</strong> — a second, different password
+      that unlocks your encrypted information (things like saved passwords).
+      You won't be asked for it every time, only when the vault has been
+      locked (for example, right after the server restarts).</li>
+  </ul>
+  <p class="callout callout-warn">
+    <strong>Write your master password down somewhere safe.</strong> It is
+    never stored anywhere in the app — not even we can recover it. If it's
+    lost, anything encrypted with it is gone for good.</p>
+  <p>Once someone has set up the vault, everyone else just signs in with a
+    username and password an admin creates for them (see
+    <a href="#users">Users &amp; roles</a>).</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="categories">Categories</h2>
+  <p>A <strong>category</strong> is a labeled collection of records — think of
+    it as a filing drawer. You're not limited to what came with the app; you
+    can make a category for absolutely anything: Customers, Domains, Recipes,
+    Passwords, Equipment, whatever fits how you work.</p>
+  <p><strong>Example:</strong> to start tracking customers —</p>
+  <ol class="help-steps">
+    <li>From the dashboard, click <strong>New category</strong>.</li>
+    <li>Type a name, e.g. <em>Customers</em>, and pick an icon (try typing an
+      emoji like 👤 into the icon box).</li>
+    <li>Click <strong>Create</strong> — you'll land on that category's field
+      builder, ready for the next step (see <a href="#fields">Fields</a>).</li>
+  </ol>
+  <p>Categories can be renamed, given a new icon, reordered, or deleted at any
+    time from <strong>Categories</strong> in the top menu (only admins see
+    this). Deleting a category permanently deletes every record inside it —
+    the app will stop you if another category still links to it (see
+    <a href="#linked-records">Linked records</a>) until you fix that first.</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="fields">Fields &amp; field types</h2>
+  <p>A <strong>field</strong> is one question every record in a category will
+    answer — a category is really just "a name plus a list of fields." Open
+    any category and click <strong>Edit fields</strong> to add, reorder, or
+    remove them.</p>
+  <p><strong>Example, continuing Customers:</strong> add a <em>Name</em> field
+    (required), an <em>Email</em> field, and a <em>Signed up</em> date field.
+    Each one you add becomes a box on the "new record" form and a column in
+    the list view.</p>
+  <p>When adding a field you choose its <strong>type</strong> — this decides
+    what kind of box it shows and how it behaves:</p>
+  <ul>
+    <li><strong>Text</strong> — a single line of anything (a name, a title).</li>
+    <li><strong>Text area</strong> — a bigger box for notes or descriptions.
+      Has a small toolbar for <strong>bold</strong>, <em>italic</em>, headings
+      and lists.</li>
+    <li><strong>Password (encrypted)</strong> — for anything sensitive
+      (an actual password, an account number). It's stored scrambled and only
+      shown again if you click <strong>Reveal</strong> with the vault unlocked.
+      See <a href="#passwords-vault">Passwords &amp; unlocking the vault</a>.</li>
+    <li><strong>URL</strong> — a web address; shown as a clickable link.</li>
+    <li><strong>Email</strong> — shown as a clickable "email this person" link.</li>
+    <li><strong>Number</strong> — plain numbers, sorted numerically not
+      alphabetically.</li>
+    <li><strong>Cost (recurring)</strong> — a number that's also billed monthly,
+      yearly, or once — feeds the <a href="#costs">Costs dashboard</a>.</li>
+    <li><strong>Date</strong> — a plain date. Shows up on the
+      <a href="#calendar">Calendar</a>.</li>
+    <li><strong>Expiry / reminder date</strong> — a date that also warns you
+      as it approaches. See <a href="#alerts">Expiry &amp; reminder alerts</a>.</li>
+    <li><strong>Dropdown (single-select)</strong> — pick one option from a list
+      you define (e.g. Status: New / Active / Closed).</li>
+    <li><strong>Multi-select</strong> — like a dropdown, but pick several at once.</li>
+    <li><strong>Linked record</strong> — points at one record in another
+      category. See <a href="#linked-records">Linked records</a>.</li>
+    <li><strong>Checkbox</strong> — a simple yes/no.</li>
+    <li><strong>Code (monospace)</strong> — for pasting a snippet, key, or
+      command, shown in a fixed-width font.</li>
+    <li><strong>File (image or document)</strong> — attach one photo or
+      document per record. See <a href="#files">File attachments</a>.</li>
+  </ul>
+  <p>Tick <strong>Required</strong> on a field to stop a record being saved
+    without it. A field's machine name (used internally) is fixed once
+    created, but its <em>label</em>, type, and settings can be changed later
+    from <strong>Edit</strong> next to it — including turning a plain field
+    into an encrypted one, which scrambles every existing value for you in
+    one step (you'll need the vault unlocked to do that).</p>
+  <p>Removing a field hides it everywhere but keeps the data underneath, in
+    case you add it back or need to recover it from the raw database.</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="records">Adding, editing &amp; deleting records</h2>
+  <p>A <strong>record</strong> is one entry in a category — one customer, one
+    domain, one password. Open a category and click <strong>New record</strong>
+    to add one; the form shows exactly the fields that category has.</p>
+  <p>From a category's list, or from a record's own page, you'll see:</p>
+  <ul>
+    <li><strong>Open</strong> — view the full record.</li>
+    <li><strong>Edit</strong> — change any of its fields.</li>
+    <li><strong>Clone</strong> — make an exact copy as a new record (handy for
+      near-identical entries, e.g. a new subscription similar to an old one).
+      Any attached file is copied too, as its own independent file.</li>
+    <li><strong>Delete</strong> — moves the record to <a href="#trash">Trash</a>,
+      it isn't gone yet.</li>
+  </ul>
+  <p>Every record also has a <strong>Tags</strong> box on its edit form — see
+    <a href="#tags">Cross-category tags</a> — and shows a "Last updated" date
+    and a <strong>Referenced by</strong> section listing any other records
+    that point at it (see <a href="#linked-records">Linked records</a>).</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="quick-add">The quick-add button</h2>
+  <p>The blue <strong>+ Add</strong> button in the header — visible on every
+    page — opens a small list of every category you have. Click one to jump
+    straight to its "new record" form, without navigating there first.</p>
+</div>
+
+<!-- ================================================================ -->
+<div class="card help-section">
+  <h2 id="linked-records">Linked records</h2>
+  <p>A <strong>Linked record</strong> field points one record at exactly one
+    record in another category — the way a spreadsheet might reference a row
+    in a different sheet. It's the right tool when the relationship is fixed
+    and structural.</p>
+  <p><strong>Example:</strong> if you also have a <em>Projects</em> category,
+    give it a "Client" field of type <em>Linked record</em>, targeting
+    Customers. Now every project picks one customer from a dropdown, shows a
+    clickable link to them, and that customer's own page lists every project
+    linked to them under <strong>Referenced by</strong>.</p>
+  <p>A category that other records still link to can't be deleted until those
+    links are removed or pointed elsewhere — this stops you accidentally
+    breaking a relationship you didn't realize existed.</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="tags">Cross-category tags</h2>
+  <p>Tags solve a different problem than linked records: grouping things that
+    aren't in a fixed relationship, on the spot, across <em>any</em> categories
+    at all — no setup required.</p>
+  <p><strong>Example:</strong> you're renewing a domain and its hosting plan at
+    the same time, even though "Domains" and "Hosting" are unrelated
+    categories. Open each record's <strong>Edit</strong> page and type
+    <code>Q4 renewal</code> into the <strong>Tags</strong> box (comma-separate
+    if you want more than one tag). Now click <strong>Tags</strong> in the top
+    menu — you'll see "Q4 renewal" listed, and clicking it shows both records
+    together, grouped by category.</p>
+  <p>Editing a record's tags replaces the old set rather than adding to it, so
+    typing just <code>office</code> and saving removes any other tags that
+    record had.</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="files">File attachments</h2>
+  <p>A <strong>File</strong> field lets you attach one photo or document to a
+    record — a scanned ID, a contract, a screenshot. Images show a small
+    preview right on the record; anything else downloads when clicked.</p>
+  <p>Files are encrypted the same way passwords are — you need the vault
+    unlocked to view or download one. Uploading a new file replaces the old
+    one automatically; there's also a checkbox to remove it without replacing.</p>
+</div>
+
+<!-- ================================================================ -->
+<div class="card help-section">
+  <h2 id="passwords-vault">Passwords &amp; unlocking the vault</h2>
+  <p>Anything stored in a <strong>Password (encrypted)</strong> field (or an
+    attached file) is scrambled before it's saved. You'll always see it masked
+    as dots — clicking <strong>Reveal</strong> decrypts it just for that
+    moment, and only while the vault is <strong>unlocked</strong>.</p>
+  <p>The padlock icon in the top-right of every page shows the vault's current
+    state:</p>
+  <ul>
+    <li><strong>🔓 Unlocked</strong> — encrypted values can be revealed or
+      downloaded. Click it to lock the vault again yourself.</li>
+    <li><strong>🔒 Locked</strong> — encrypted content stays hidden, even from
+      someone signed into your account, until the master password is entered
+      again. This happens automatically whenever the server restarts.</li>
+  </ul>
+  <p>Locking doesn't sign you out or hide anything else — categories, plain
+    fields, and everything non-sensitive stay fully visible and editable
+    either way.</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="trash">Trash — undoing a delete</h2>
+  <p>Deleting a record never erases it right away — it moves to
+    <strong>Trash</strong> (in the top menu), where it sits until you either:</p>
+  <ul>
+    <li><strong>Restore</strong> it — brings it back exactly as it was,
+      everywhere (lists, search, tags, links all see it again).</li>
+    <li><strong>Delete forever</strong> — this one really is permanent. There's
+      no second trash after this.</li>
+  </ul>
+  <p>A trashed record disappears from search results, category lists, and
+    linked-record dropdowns until it's restored — so it won't clutter
+    anything while it's waiting there.</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="backup">Backup &amp; restore <span class="muted">(admin only)</span></h2>
+  <p>Your entire vault — every category, field, record, encrypted password and
+    attached file — lives in one single file. <strong>Settings → Backup &amp;
+    restore</strong> lets an admin:</p>
+  <ul>
+    <li><strong>Download a backup</strong> — a safe, consistent snapshot you
+      can take any time, even while others are using the vault. Keep it
+      somewhere safe (a USB drive, cloud storage you trust).</li>
+    <li><strong>Restore from a backup</strong> — replaces everything currently
+      in the vault with the contents of a file you upload. Type
+      <code>RESTORE</code> to confirm — this is the one action in the whole
+      app that can wipe out today's data, so it's deliberately hard to do by
+      accident. Your current database is saved automatically first, just in
+      case.</li>
+  </ul>
+</div>
+
+<!-- ================================================================ -->
+<div class="card help-section">
+  <h2 id="search">Search</h2>
+  <p>The search box in the header looks across <em>every</em> category at
+    once, matching anything you've typed into a plain field, a linked
+    record's name, a filename, or a tag. Encrypted (password) values are never
+    searchable, by design.</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="sort-filter">Sort &amp; filter</h2>
+  <p>On any category's record list, click a column heading to sort by it —
+    click again to reverse the order. The <strong>Filter</strong> bar above
+    the table narrows the list down further: type a few letters for a text
+    field, or pick a value from a dropdown for choice-type fields. Both sort
+    and filter show up in the page's address, so you can bookmark or share a
+    particular view.</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="alerts">Expiry &amp; reminder alerts</h2>
+  <p>An <strong>Expiry / reminder date</strong> field is a normal date that
+    also watches itself — once it's within its configured window (set when
+    the field was created, e.g. "30 days before"), it shows up as a warning
+    badge in the header on every page, for every user.</p>
+  <p>Click the badge to see exactly what's due, when, and to
+    <strong>Dismiss</strong> one you've already dealt with — it'll quietly
+    reappear if the date changes, or if it becomes more urgent (an upcoming
+    reminder you dismissed will still alert you once it's actually overdue).</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="calendar">Calendar view</h2>
+  <p>The <strong>Calendar</strong> page plots every <em>Date</em> and
+    <em>Expiry / reminder date</em> field, from every category, onto a normal
+    month grid — a domain's expiry, an invoice due date, a meeting, all on
+    the day they actually fall, color-coded by category. It's read-only:
+    click any date to open that record and make changes there.</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="costs">Costs dashboard</h2>
+  <p>If you use any <strong>Cost (recurring)</strong> fields (see
+    <a href="#fields">Fields</a>), the <strong>Costs</strong> page adds every
+    one of them up into a single monthly and annual total — automatically
+    converting a yearly cost into its monthly equivalent and vice versa, with
+    a per-category breakdown underneath so you can see what's driving the
+    number.</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="dashboard-summary">The dashboard summary</h2>
+  <p>The dashboard (your home page) leads with up to three cards, each only
+    shown when there's something to say: your nearest upcoming
+    <a href="#alerts">alerts</a>, your <a href="#costs">cost</a> totals, and —
+    for admins — the most recent activity in the vault. Below that is the
+    usual grid of your categories.</p>
+</div>
+
+<!-- ================================================================ -->
+<div class="card help-section">
+  <h2 id="activity-log">Activity log <span class="muted">(admin only)</span></h2>
+  <p><strong>Settings → Activity log</strong> is a running history of who did
+    what and when — who created, edited, trashed, restored, permanently
+    deleted, or cloned a record, and who created or deleted a category. It's
+    the answer to "wait, who deleted this?" — and it keeps its own record even
+    after the thing it describes is long gone.</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="templates">Templates <span class="muted">(admin only)</span></h2>
+  <p>A template is just a category's field list, saved as a small file — no
+    records included. <strong>Export template</strong> (on a category's field
+    page) downloads one; <strong>Import</strong> (on the Categories page)
+    creates a brand-new, empty category from one. Handy for recreating the
+    same category shape somewhere else, or sharing a layout with someone.</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="users">Users &amp; roles <span class="muted">(admin only)</span></h2>
+  <p>Everyone who can sign in sees the same data — there's no per-category
+    privacy between users. The difference is what they can <em>restructure</em>:</p>
+  <ul>
+    <li><strong>Member</strong> — can add, edit, trash and clone records
+      freely, but can't create/edit/delete categories or fields, manage other
+      users, or use backup/restore.</li>
+    <li><strong>Admin</strong> — can do everything, including all of the
+      above.</li>
+  </ul>
+  <p>Manage this from <strong>Settings</strong>: create a user, reset a
+    password, change a role, or remove someone (their past records are kept,
+    just no longer credited to their account).</p>
+</div>
+
+<div class="card help-section">
+  <h2 id="troubleshooting">Common questions</h2>
+  <dl class="help-faq">
+    <dt>I forgot my master password — can you reset it?</dt>
+    <dd>No one can, including an admin. It's never stored anywhere, by design.
+      Anything encrypted with it (passwords, files) is unrecoverable. Everything
+      else in the vault is unaffected and stays fully usable.</dd>
+
+    <dt>I deleted something by mistake.</dt>
+    <dd>Check <a href="#trash">Trash</a> first — unless it was already
+      permanently deleted from there, it's recoverable with one click.</dd>
+
+    <dt>Why can't I see a "New category" or "Settings" option?</dt>
+    <dd>Those are admin-only. Ask whoever set up your account to either do it
+      for you or make you an admin (see <a href="#users">Users &amp; roles</a>).</dd>
+
+    <dt>Why does it say the vault is "Locked"?</dt>
+    <dd>This happens automatically after the server restarts, as a safety
+      measure. Click the padlock and enter the master password to unlock —
+      see <a href="#passwords-vault">Passwords &amp; unlocking the vault</a>.</dd>
+
+    <dt>Can two people edit the vault at the same time?</dt>
+    <dd>Yes — every signed-in user shares the same live data.</dd>
+
+    <dt>Is my data sent anywhere else?</dt>
+    <dd>No. {{ app_title }} makes no outbound calls of any kind and has no
+      analytics or telemetry — everything stays on the server you're running
+      it on.</dd>
+  </dl>
+</div>
+{% endblock %}

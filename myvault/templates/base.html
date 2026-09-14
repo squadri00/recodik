@@ -25,6 +25,7 @@
       <a href="{{ url_for('categories.manage') }}">Categories</a>
       <a href="{{ url_for('settings.index') }}">Settings</a>
     {% endif %}
+    <a href="{{ url_for('help.guide') }}">Help</a>
   </nav>
   <form class="topsearch" method="get" action="{{ url_for('search.search_page') }}" role="search">
     <input type="search" name="q" placeholder="Search…" aria-label="Search all categories"
