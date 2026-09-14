@@ -1,5 +1,59 @@
 {% extends "base.html" %}
 {% block content %}
+{% if header_alerts or cost_summary['categories'] or recent_activity %}
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-bottom:1.5rem">
+  {% if header_alerts %}
+    <div class="card">
+      <h2>⚠ Alerts <span class="muted" style="font-weight:400">({{ header_alerts|length }})</span></h2>
+      <ul class="summary-list">
+        {% for a in header_alerts[:5] %}
+          <li style="display:flex;justify-content:space-between;gap:.5rem">
+            <a href="{{ url_for('records.view', record_id=a['record_id']) }}">{{ a['label'] }}</a>
+            <span class="muted">
+              {%- if a['days_left'] < 0 %}overdue {{ -a['days_left'] }}d
+              {%- elif a['days_left'] == 0 %}due today
+              {%- else %}in {{ a['days_left'] }}d{% endif -%}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+      {% if header_alerts|length > 5 %}
+        <p class="muted" style="margin-top:.5rem;font-size:.8rem">+{{ header_alerts|length - 5 }} more in the header</p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if cost_summary['categories'] %}
+    <div class="card">
+      <h2>Costs</h2>
+      <p style="font-size:1.4rem;font-weight:700;margin:.2rem 0 0">
+        {{ '%.2f' | format(cost_summary['grand_monthly']) }}<span class="muted" style="font-size:.8rem;font-weight:400"> /mo</span>
+      </p>
+      <p class="muted" style="margin:0 0 .6rem;font-size:.85rem">{{ '%.2f' | format(cost_summary['grand_yearly']) }} /yr</p>
+      <a class="btn btn-ghost" style="padding:.3rem .6rem;font-size:.82rem" href="{{ url_for('costs.dashboard') }}">View breakdown</a>
+    </div>
+  {% endif %}
+
+  {% if recent_activity %}
+    <div class="card">
+      <h2>Recent activity</h2>
+      <ul class="summary-list">
+        {% for e in recent_activity %}
+          <li>
+            <span class="muted">{{ e['ts'][:10] }}</span>
+            {{ e['username'] }} &middot; {{ action_labels.get(e['action'], e['action']) }}
+            {%- if e['record_label'] %} &mdash; {{ e['record_label'] }}
+            {%- elif e['category_name'] %} &mdash; {{ e['category_name'] }}{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+      <a class="btn btn-ghost" style="padding:.3rem .6rem;font-size:.82rem;margin-top:.5rem;display:inline-block"
+         href="{{ url_for('settings.audit_log') }}">View full log</a>
+    </div>
+  {% endif %}
+</div>
+{% endif %}
+
 <div class="page-head">
   <h1>Your categories</h1>
   {% if current_user['role'] == 'admin' %}

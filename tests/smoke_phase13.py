@@ -74,10 +74,15 @@ assert active[0]["label"] == "lapsed.example" and active[1]["label"] == "soon.ex
 print("OK  active_alerts(): far-future excluded, upcoming + overdue included, soonest/most-overdue first")
 
 # --- the header shows the badge + both entries ---
+# (scoped to before "Recent activity" -- the dashboard's own activity-feed card
+# legitimately mentions far-future.example too, since it was just created;
+# that's unrelated to whether it's an *active alert*, which is what this checks)
 html = c.get("/").get_data(as_text=True)
-assert "⚠ 2" in html
-assert "lapsed.example" in html and "soon.example" in html and "far-future.example" not in html
-assert "overdue by 3 day" in html and "in 10 day" in html
+alerts_html = html.split("Recent activity")[0]
+assert "⚠ 2" in alerts_html
+assert "lapsed.example" in alerts_html and "soon.example" in alerts_html
+assert "far-future.example" not in alerts_html
+assert "overdue by 3 day" in alerts_html and "in 10 day" in alerts_html
 print("OK  the dashboard header renders the badge and both active alerts")
 
 # --- dismiss the upcoming one ---

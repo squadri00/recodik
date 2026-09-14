@@ -84,6 +84,8 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     app.register_blueprint(costs.bp)
 
+    from . import audit
+
     from . import tags
 
     app.register_blueprint(tags.bp)
@@ -106,7 +108,15 @@ def create_app(test_config: dict | None = None) -> Flask:
             "SELECT c.*, (SELECT COUNT(*) FROM records r WHERE r.category_id=c.id) "
             "AS record_count FROM categories c ORDER BY c.sort_order, c.name"
         ).fetchall()
-        return render_template("dashboard.html", categories=cats)
+        # header_alerts (already computed once per request by inject_globals) covers
+        # the Alerts card -- no need to call active_alerts() a second time here.
+        recent_activity = audit.recent(5) if g.user["role"] == "admin" else []
+        return render_template(
+            "dashboard.html", categories=cats,
+            cost_summary=costs.cost_rollup(),
+            recent_activity=recent_activity,
+            action_labels=audit.ACTION_LABELS,
+        )
 
     @app.context_processor
     def inject_globals():

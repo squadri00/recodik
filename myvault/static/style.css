@@ -285,6 +285,9 @@ thead .sticky-col { z-index: 1; }
 }
 .linkbtn-danger { color: var(--error-ink); }
 
+/* --- dashboard summary cards (alerts / costs / recent activity) --- */
+.summary-list { list-style: none; margin: .5rem 0 0; padding: 0; display: grid; gap: .45rem; font-size: .85rem; }
+
 /* one-line, text-style row actions (record list) -- forms collapse via
    display:contents so their button sits directly in the flex row, no
    extra wrapper gap; the table's own horizontal scroll (not wrapping)
