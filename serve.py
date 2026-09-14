@@ -23,9 +23,9 @@ def main() -> None:
     port = int(os.environ.get("MYVAULT_PORT", "8000"))
     threads = int(os.environ.get("MYVAULT_THREADS", "8"))
     app = create_app()
-    print(f"MyVault serving on http://{host}:{port}  (db: {app.config['DATABASE']})",
+    print(f"Recodik serving on http://{host}:{port}  (db: {app.config['DATABASE']})",
           flush=True)
-    serve(app, host=host, port=port, threads=threads, ident="MyVault")
+    serve(app, host=host, port=port, threads=threads, ident="Recodik")
 
 
 if __name__ == "__main__":

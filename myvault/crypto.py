@@ -1,4 +1,4 @@
-"""Encryption for MyVault.
+"""Encryption for Recodik.
 
 The Fernet key is derived from the install's *master password* via PBKDF2-HMAC-SHA256
 with a random salt stored in ``meta``. The derived key is held only in this process's

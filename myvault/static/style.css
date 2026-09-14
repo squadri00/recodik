@@ -65,8 +65,9 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
 }
-.brand { font-weight: 700; color: var(--text); }
+.brand { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: .45rem; }
 .brand:hover { text-decoration: none; }
+.brand-logo { height: 22px; width: auto; display: block; }
 .topnav { display: flex; gap: 1rem; }
 .topnav a { color: var(--muted); }
 .topnav a:hover { color: var(--text); text-decoration: none; }
@@ -132,6 +133,10 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
 .wrap-narrow { max-width: 440px; }
 
 .foot { text-align: center; color: var(--muted); font-size: .8rem; padding: 2rem 1rem; }
+.foot-brand { display: inline-flex; align-items: center; gap: .55rem; color: var(--text); font-weight: 700; font-size: 1.05rem; }
+.foot-brand:hover { text-decoration: none; opacity: .85; }
+.foot-logo { height: 40px; width: auto; display: block; }
+.foot-tagline { margin-top: .5rem; }
 
 .card {
   background: var(--surface);

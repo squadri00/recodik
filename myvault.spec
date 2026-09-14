@@ -1,8 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec for the MyVault desktop executable.
+"""PyInstaller spec for the Recodik desktop executable.
 
 Build:  pyinstaller myvault.spec
-Output: dist/MyVault  (dist/MyVault.exe on Windows)
+Output: dist/Recodik  (dist/Recodik.exe on Windows)
 
 PyInstaller does NOT cross-compile: build the Windows .exe on Windows, the macOS
 binary on macOS, the Linux binary on Linux.
@@ -56,7 +56,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name="MyVault",
+    name="Recodik",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

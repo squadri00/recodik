@@ -58,10 +58,13 @@ assert "<script>alert(1)" not in html.replace("\n", "")
 print("OK  a <script> tag is stripped from rendered output")
 
 # --- XSS: an <img onerror=...> never survives ---
+# (scoped to the record's own rendered field, not the whole page -- the page
+# legitimately has its own <img> tags now, for the header/footer brand logo)
 c.post(f"/records/{rid}/edit", data={"body": '<img src=x onerror="alert(1)">'},
        follow_redirects=True)
 html = c.get(f"/records/{rid}").get_data(as_text=True)
-assert "onerror" not in html.lower() and "<img" not in html.lower()
+body_html = html.split('<dl class="detail">')[1].split("Last updated")[0]
+assert "onerror" not in body_html.lower() and "<img" not in body_html.lower()
 print("OK  an <img onerror=...> is stripped, not rendered")
 
 # --- a javascript: link is neutered ---

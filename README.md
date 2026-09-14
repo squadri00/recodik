@@ -1,4 +1,7 @@
-# MyVault
+# Recodik
+
+*(Product of [Eformics Systems](https://recodik.com). Internally the codebase and
+Python package keep their original name, `myvault` — see [Project layout](#project-layout).)*
 
 A self-hosted, no-code, fully customizable record keeper. You define your own
 **categories** (like tables) and, for each, your own **fields**, field types, and
@@ -46,7 +49,7 @@ Sub-projects points at Projects (or at Projects itself for a self-nested tree).
 **File attachments (v3):** each upload is capped at 15 MB by default (raise it
 with the `MYVAULT_MAX_FILE_MB` env var; also bump `MYVAULT_MAX_UPLOAD_MB`, the
 whole-request cap, to match). Existing v1/v2 databases upgrade automatically —
-on first start after updating, MyVault adds the `files` table in place; no
+on first start after updating, Recodik adds the `files` table in place; no
 manual migration step.
 
 ---
@@ -88,8 +91,8 @@ lives only in the server process's memory; after a restart the vault is
 
 The desktop build starts a local server on a free port and opens your browser to
 it. Data is stored under your per-user application-data directory
-(`%APPDATA%\MyVault` on Windows, `~/Library/Application Support/MyVault` on macOS,
-`~/.local/share/MyVault` on Linux).
+(`%APPDATA%\Recodik` on Windows, `~/Library/Application Support/Recodik` on macOS,
+`~/.local/share/Recodik` on Linux).
 
 ```bash
 python -m venv .venv && source .venv/bin/activate   # or the Windows equivalent
@@ -97,7 +100,7 @@ pip install -r requirements-dev.txt
 pyinstaller myvault.spec
 ```
 
-Output: `dist/MyVault` (`dist/MyVault.exe` on Windows). It is a single file with
+Output: `dist/Recodik` (`dist/Recodik.exe` on Windows). It is a single file with
 no dependencies — copy it anywhere and double-click.
 
 > **PyInstaller does not cross-compile.** A Windows `.exe` must be built on

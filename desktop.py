@@ -44,15 +44,15 @@ def main() -> None:
 
     app = create_app()
 
-    print("MyVault", flush=True)
+    print("Recodik", flush=True)
     print(f"  data:  {app.config['DATABASE']}", flush=True)
     print(f"  url:   {url}", flush=True)
-    print("  Close this window to stop MyVault.", flush=True)
+    print("  Close this window to stop Recodik.", flush=True)
 
     server = threading.Thread(
         target=serve,
         args=(app,),
-        kwargs={"host": host, "port": port, "threads": 6, "ident": "MyVault"},
+        kwargs={"host": host, "port": port, "threads": 6, "ident": "Recodik"},
         daemon=True,
     )
     server.start()
@@ -67,7 +67,7 @@ def main() -> None:
         while server.is_alive():
             server.join(1.0)
     except KeyboardInterrupt:
-        print("\nStopping MyVault.", flush=True)
+        print("\nStopping Recodik.", flush=True)
         sys.exit(0)
 
 

@@ -9,7 +9,7 @@ filesystem copy of a file that might be mid-write.
 
 Restoring is the dangerous half: it replaces the live database outright. Every
 restore first takes a safety snapshot of whatever was live, then validates the
-uploaded file actually looks like a MyVault database before touching anything.
+uploaded file actually looks like a Recodik database before touching anything.
 """
 
 from __future__ import annotations
@@ -80,7 +80,7 @@ def backups_dir() -> str:
 
 
 def validate_backup(path: str) -> str | None:
-    """None if `path` looks like a legitimate, restorable MyVault database,
+    """None if `path` looks like a legitimate, restorable Recodik database,
     otherwise a human-readable reason it was refused."""
     try:
         conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
@@ -90,7 +90,7 @@ def validate_backup(path: str) -> str | None:
         tables = {r[0] for r in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'")}
         if not REQUIRED_TABLES.issubset(tables):
-            return "That file doesn't look like a MyVault database."
+            return "That file doesn't look like a Recodik database."
 
         row = conn.execute(
             "SELECT value FROM meta WHERE key = 'schema_version'"
@@ -98,8 +98,8 @@ def validate_backup(path: str) -> str | None:
         version = int(row[0]) if row and row[0] else 0
         if version > SCHEMA_VERSION:
             return (
-                f"That backup is from a newer version of MyVault (schema v{version}; "
-                f"this install understands up to v{SCHEMA_VERSION}). Update MyVault "
+                f"That backup is from a newer version of Recodik (schema v{version}; "
+                f"this install understands up to v{SCHEMA_VERSION}). Update Recodik "
                 "before restoring it."
             )
         if not conn.execute("SELECT 1 FROM users LIMIT 1").fetchone():

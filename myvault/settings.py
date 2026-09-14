@@ -153,7 +153,7 @@ def user_delete(user_id: int):
 @admin_required
 def backup_download():
     """A consistent snapshot of the entire vault -- one file, drop it into any
-    MyVault installation (same deployment or a brand new one) to restore it."""
+    Recodik installation (same deployment or a brand new one) to restore it."""
     tmp_path = backup.make_download_copy()
     resp = send_file(
         tmp_path,

@@ -105,7 +105,7 @@ def parse_template(text: str) -> tuple[dict | None, str | None]:
     except ValueError:
         return None, "That file isn't valid JSON."
     if not isinstance(doc, dict) or doc.get("myvault_template") != TEMPLATE_FORMAT:
-        return None, "Not a MyVault template file (missing \"myvault_template\": 1)."
+        return None, "Not a Recodik template file (missing \"myvault_template\": 1)."
 
     name = str(doc.get("name") or "").strip()
     if not name:

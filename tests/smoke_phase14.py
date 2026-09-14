@@ -42,7 +42,7 @@ assert {"meta", "users", "categories", "fields", "records"} <= {
     r[0] for r in check_conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
 assert check_conn.execute("SELECT name FROM categories").fetchone()[0] == "Alpha"
 check_conn.close()
-print("OK  the downloaded file is itself a complete, valid MyVault database")
+print("OK  the downloaded file is itself a complete, valid Recodik database")
 
 # --- non-admin is refused ---
 c.post("/settings/users", data={"username": "bob", "password": "bobpassword1", "role": "member"})
@@ -76,8 +76,8 @@ bogus_conn.close()
 r = c.post("/settings/backup/restore",
            data={"confirm": "RESTORE", "backup_file": (open(bogus, "rb"), "bogus.sqlite3")},
            content_type="multipart/form-data", follow_redirects=True)
-assert b"doesn" in r.data and b"look like a MyVault database" in r.data
-print("OK  a valid SQLite file that isn't a MyVault database is rejected")
+assert b"doesn" in r.data and b"look like a Recodik database" in r.data
+print("OK  a valid SQLite file that isn't a Recodik database is rejected")
 
 # --- restore validation: a schema from a newer, not-yet-understood version ---
 future = os.path.join(tempfile.mkdtemp(), "future.sqlite3")
@@ -95,7 +95,7 @@ fconn.commit(); fconn.close()
 r = c.post("/settings/backup/restore",
            data={"confirm": "RESTORE", "backup_file": (open(future, "rb"), "future.sqlite3")},
            content_type="multipart/form-data", follow_redirects=True)
-assert b"newer version of MyVault" in r.data
+assert b"newer version of Recodik" in r.data
 assert "Alpha" in cat_names()
 print("OK  a backup from a newer schema version is rejected; live vault untouched")
 

@@ -1,4 +1,4 @@
-"""MyVault -- a self-hosted, no-code, customizable record keeper.
+"""Recodik -- a self-hosted, no-code, customizable record keeper.
 
 Application factory. Blueprints are registered per build phase.
 """
@@ -15,7 +15,7 @@ __version__ = "0.10.0"
 def create_app(test_config: dict | None = None) -> Flask:
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
-        APP_TITLE="MyVault",
+        APP_TITLE="Recodik",
         DATABASE=os.environ.get(
             "MYVAULT_DB", os.path.join(app.instance_path, "myvault.sqlite3")
         ),

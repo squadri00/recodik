@@ -5,12 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ app_title }}{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%97%84%EF%B8%8F%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="{{ url_for('static', filename='recodik-logo.png') }}">
 </head>
 <body>
 {% if current_user %}
 <header class="topbar">
-  <a class="brand" href="{{ url_for('index') }}">🗄️ {{ app_title }}</a>
+  <a class="brand" href="{{ url_for('index') }}">
+    <img src="{{ url_for('static', filename='recodik-logo.png') }}" alt="" class="brand-logo">
+    {{ app_title }}
+  </a>
   <nav class="topnav">
     <a href="{{ url_for('index') }}">Dashboard</a>
     <a href="{{ url_for('calendar_view.view') }}">Calendar</a>
@@ -98,7 +101,13 @@
   {% block content %}{% endblock %}
 </main>
 
-<footer class="foot">{{ app_title }} v{{ app_version }} · self-hosted · no telemetry</footer>
+<footer class="foot">
+  <a class="foot-brand" href="https://recodik.com" target="_blank" rel="noopener noreferrer">
+    <img src="{{ url_for('static', filename='recodik-logo.png') }}" alt="" class="foot-logo">
+    <span class="foot-name">{{ app_title }}</span>
+  </a>
+  <div class="foot-tagline">v{{ app_version }} · self-hosted · no telemetry · product of Eformics Systems</div>
+</footer>
 <script src="{{ url_for('static', filename='app.js') }}" defer></script>
 </body>
 </html>

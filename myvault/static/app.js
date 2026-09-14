@@ -1,4 +1,4 @@
-// MyVault client-side helpers. Vanilla JS only -- no framework, no build step.
+// Recodik client-side helpers. Vanilla JS only -- no framework, no build step.
 "use strict";
 
 // --- Field builder: options textarea shows only for option types -------------
