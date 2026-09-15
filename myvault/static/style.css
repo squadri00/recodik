@@ -137,6 +137,8 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
 .foot-brand:hover { text-decoration: none; opacity: .85; }
 .foot-logo { height: 40px; width: auto; display: block; }
 .foot-tagline { margin-top: .5rem; }
+.foot-legal { margin-top: .75rem; font-size: .78rem; }
+.foot-legal p { margin: .35rem auto 0; max-width: 480px; }
 
 .card {
   background: var(--surface);

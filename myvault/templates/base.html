@@ -26,6 +26,7 @@
       <a href="{{ url_for('settings.index') }}">Settings</a>
     {% endif %}
     <a href="{{ url_for('help.guide') }}">Help</a>
+    <a href="https://recodik.com/news.php" target="_blank" rel="noopener noreferrer">News</a>
   </nav>
   <form class="topsearch" method="get" action="{{ url_for('search.search_page') }}" role="search">
     <input type="search" name="q" placeholder="Search…" aria-label="Search all categories"
@@ -108,6 +109,12 @@
     <span class="foot-name">{{ app_title }}</span>
   </a>
   <div class="foot-tagline">v{{ app_version }} · self-hosted · no telemetry · product of Eformics Systems</div>
+  <div class="foot-legal">
+    <a href="https://www.eformics.com/privacy-policy.php" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+    &middot;
+    <a href="https://www.eformics.com/terms.php" target="_blank" rel="noopener noreferrer">Terms of Use</a>
+    <p>Recodik is provided "as is," with no warranty of any kind. Eformics Systems is not liable for any loss or damage arising from its use.</p>
+  </div>
 </footer>
 <script src="{{ url_for('static', filename='app.js') }}" defer></script>
 </body>
