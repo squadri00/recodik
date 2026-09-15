@@ -15,6 +15,7 @@ instance/
 # PyInstaller build output
 build/
 dist/
+version_info.txt
 
 # Editor / OS
 .vscode/
