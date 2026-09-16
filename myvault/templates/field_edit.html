@@ -57,7 +57,7 @@
     {% if can_encrypt %}
       <label class="check" data-encrypt-wrap hidden>
         <input type="checkbox" name="encrypt_existing" value="1" checked>
-        Encrypt this field's existing values now (requires the vault unlocked)
+        Encrypt this field's existing values now (requires {{ app_title }} unlocked)
       </label>
     {% endif %}
     <button class="btn btn-primary" type="submit">Save field</button>

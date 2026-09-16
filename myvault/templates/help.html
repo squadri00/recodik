@@ -58,7 +58,7 @@
     <div>
       <h3>Keeping things safe</h3>
       <ul>
-        <li><a href="#passwords-vault">Passwords &amp; unlocking the vault</a></li>
+        <li><a href="#passwords-vault">Passwords &amp; unlocking</a></li>
         <li><a href="#trash">Trash — undoing a delete</a></li>
         <li><a href="#backup">Backup &amp; restore <span class="muted">(admin)</span></a></li>
       </ul>
@@ -75,7 +75,7 @@
       </ul>
     </div>
     <div>
-      <h3>Running the vault</h3>
+      <h3>Admin &amp; maintenance</h3>
       <ul>
         <li><a href="#activity-log">Activity log <span class="muted">(admin)</span></a></li>
         <li><a href="#templates">Templates <span class="muted">(admin)</span></a></li>
@@ -96,14 +96,14 @@
       you type in every time to sign in, like any other website.</li>
     <li><strong>The master password</strong> — a second, different password
       that unlocks your encrypted information (things like saved passwords).
-      You won't be asked for it every time, only when the vault has been
+      You won't be asked for it every time, only when {{ app_title }} has been
       locked (for example, right after the server restarts).</li>
   </ul>
   <p class="callout callout-warn">
     <strong>Write your master password down somewhere safe.</strong> It is
     never stored anywhere in the app — not even we can recover it. If it's
     lost, anything encrypted with it is gone for good.</p>
-  <p>Once someone has set up the vault, everyone else just signs in with a
+  <p>Once someone has completed that setup, everyone else just signs in with a
     username and password an admin creates for them (see
     <a href="#users">Users &amp; roles</a>).</p>
 </div>
@@ -148,8 +148,8 @@
       and lists.</li>
     <li><strong>Password (encrypted)</strong> — for anything sensitive
       (an actual password, an account number). It's stored scrambled and only
-      shown again if you click <strong>Reveal</strong> with the vault unlocked.
-      See <a href="#passwords-vault">Passwords &amp; unlocking the vault</a>.</li>
+      shown again if you click <strong>Reveal</strong> while unlocked.
+      See <a href="#passwords-vault">Passwords &amp; unlocking</a>.</li>
     <li><strong>URL</strong> — a web address; shown as a clickable link.</li>
     <li><strong>Email</strong> — shown as a clickable "email this person" link.</li>
     <li><strong>Number</strong> — plain numbers, sorted numerically not
@@ -176,7 +176,7 @@
     created, but its <em>label</em>, type, and settings can be changed later
     from <strong>Edit</strong> next to it — including turning a plain field
     into an encrypted one, which scrambles every existing value for you in
-    one step (you'll need the vault unlocked to do that).</p>
+    one step (you'll need {{ app_title }} unlocked to do that).</p>
   <p>Removing a field hides it everywhere but keeps the data underneath, in
     case you add it back or need to recover it from the raw database.</p>
 </div>
@@ -248,23 +248,23 @@
   <p>A <strong>File</strong> field lets you attach one photo or document to a
     record — a scanned ID, a contract, a screenshot. Images show a small
     preview right on the record; anything else downloads when clicked.</p>
-  <p>Files are encrypted the same way passwords are — you need the vault
+  <p>Files are encrypted the same way passwords are — you need {{ app_title }}
     unlocked to view or download one. Uploading a new file replaces the old
     one automatically; there's also a checkbox to remove it without replacing.</p>
 </div>
 
 <!-- ================================================================ -->
 <div class="card help-section">
-  <h2 id="passwords-vault">Passwords &amp; unlocking the vault</h2>
+  <h2 id="passwords-vault">Passwords &amp; unlocking</h2>
   <p>Anything stored in a <strong>Password (encrypted)</strong> field (or an
     attached file) is scrambled before it's saved. You'll always see it masked
     as dots — clicking <strong>Reveal</strong> decrypts it just for that
-    moment, and only while the vault is <strong>unlocked</strong>.</p>
-  <p>The padlock icon in the top-right of every page shows the vault's current
+    moment, and only while {{ app_title }} is <strong>unlocked</strong>.</p>
+  <p>The padlock icon in the top-right of every page shows the current lock
     state:</p>
   <ul>
     <li><strong>🔓 Unlocked</strong> — encrypted values can be revealed or
-      downloaded. Click it to lock the vault again yourself.</li>
+      downloaded. Click it to lock it again yourself.</li>
     <li><strong>🔒 Locked</strong> — encrypted content stays hidden, even from
       someone signed into your account, until the master password is entered
       again. This happens automatically whenever the server restarts.</li>
@@ -291,15 +291,15 @@
 
 <div class="card help-section">
   <h2 id="backup">Backup &amp; restore <span class="muted">(admin only)</span></h2>
-  <p>Your entire vault — every category, field, record, encrypted password and
+  <p>Everything you've stored — every category, field, record, encrypted password and
     attached file — lives in one single file. <strong>Settings → Backup &amp;
     restore</strong> lets an admin:</p>
   <ul>
     <li><strong>Download a backup</strong> — a safe, consistent snapshot you
-      can take any time, even while others are using the vault. Keep it
+      can take any time, even while others are using {{ app_title }}. Keep it
       somewhere safe (a USB drive, cloud storage you trust).</li>
     <li><strong>Restore from a backup</strong> — replaces everything currently
-      in the vault with the contents of a file you upload. Type
+      stored with the contents of a file you upload. Type
       <code>RESTORE</code> to confirm — this is the one action in the whole
       app that can wipe out today's data, so it's deliberately hard to do by
       accident. Your current database is saved automatically first, just in
@@ -362,7 +362,7 @@
   <p>The dashboard (your home page) leads with up to three cards, each only
     shown when there's something to say: your nearest upcoming
     <a href="#alerts">alerts</a>, your <a href="#costs">cost</a> totals, and —
-    for admins — the most recent activity in the vault. Below that is the
+    for admins — the most recent activity. Below that is the
     usual grid of your categories.</p>
 </div>
 
@@ -407,7 +407,7 @@
     <dt>I forgot my master password — can you reset it?</dt>
     <dd>No one can, including an admin. It's never stored anywhere, by design.
       Anything encrypted with it (passwords, files) is unrecoverable. Everything
-      else in the vault is unaffected and stays fully usable.</dd>
+      else is unaffected and stays fully usable.</dd>
 
     <dt>I deleted something by mistake.</dt>
     <dd>Check <a href="#trash">Trash</a> first — unless it was already
@@ -417,12 +417,12 @@
     <dd>Those are admin-only. Ask whoever set up your account to either do it
       for you or make you an admin (see <a href="#users">Users &amp; roles</a>).</dd>
 
-    <dt>Why does it say the vault is "Locked"?</dt>
+    <dt>Why does it say "Locked"?</dt>
     <dd>This happens automatically after the server restarts, as a safety
       measure. Click the padlock and enter the master password to unlock —
-      see <a href="#passwords-vault">Passwords &amp; unlocking the vault</a>.</dd>
+      see <a href="#passwords-vault">Passwords &amp; unlocking</a>.</dd>
 
-    <dt>Can two people edit the vault at the same time?</dt>
+    <dt>Can two people edit at the same time?</dt>
     <dd>Yes — every signed-in user shares the same live data.</dd>
 
     <dt>Is my data sent anywhere else?</dt>

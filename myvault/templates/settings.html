@@ -61,25 +61,25 @@
 
 <div class="card" style="margin-top:1.25rem">
   <h2>Backup &amp; restore</h2>
-  <p class="muted">The entire vault — every category, field, record, encrypted
+  <p class="muted">Everything you've stored — every category, field, record, encrypted
     password and uploaded file — lives in one database file. This downloads (or
     replaces) that whole file at once.</p>
 
   <h3>Download a full backup</h3>
   <p class="muted">A consistent snapshot, safe to take at any time. Drop the
     downloaded file into any Recodik installation — the same one or a brand new
-    one — to restore this exact vault there.</p>
+    one — to restore this exact data there.</p>
   <a class="btn btn-primary" href="{{ url_for('settings.backup_download') }}">Download backup</a>
 
   <h3 style="margin-top:1.5rem">Restore from a backup</h3>
   <div class="callout callout-warn">
-    <strong>This replaces everything currently in this vault</strong> with the
+    <strong>This replaces everything currently stored here</strong> with the
     contents of the file you upload. Your current database is saved automatically
     first, but treat this as one-way — only do it if you mean to.
   </div>
   <form method="post" action="{{ url_for('settings.backup_restore') }}"
         enctype="multipart/form-data"
-        onsubmit="return confirm('This replaces every category, field and record currently in this vault. Continue?');">
+        onsubmit="return confirm('This replaces every category, field and record currently stored here. Continue?');">
     <label>Backup file (.sqlite3)
       <input type="file" name="backup_file" accept=".sqlite3,application/octet-stream" required>
     </label>
@@ -91,7 +91,7 @@
 </div>
 
 <div class="card" style="margin-top:1.25rem">
-  <h2>Vault</h2>
+  <h2>Security</h2>
   <p class="muted">Changing the master password and customizing the app title arrive in Phase 9.</p>
 </div>
 

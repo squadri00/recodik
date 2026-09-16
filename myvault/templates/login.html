@@ -6,7 +6,7 @@
     <img src="{{ url_for('static', filename='recodik-logo.png') }}" alt="" class="brand-logo" style="height:28px">
     {{ app_title }}
   </h1>
-  <p class="muted">Sign in to your vault.</p>
+  <p class="muted">Sign in to {{ app_title }}.</p>
   <form method="post" autocomplete="off">
     <label>Username
       <input type="text" name="username" value="{{ username }}" required autofocus

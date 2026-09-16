@@ -101,6 +101,48 @@ document.querySelectorAll("[data-alert-toggle]").forEach(function (btn) {
   });
 });
 
+// --- Light/dark theme toggle, persisted in localStorage ---------------------
+(function () {
+  var KEY = "recodik-theme";
+  var root = document.documentElement;
+  var btn = document.querySelector("[data-theme-toggle]");
+  var icon = document.querySelector("[data-theme-icon]");
+
+  function storedTheme() {
+    try {
+      return localStorage.getItem(KEY);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function effectiveTheme() {
+    var stored = storedTheme();
+    if (stored === "light" || stored === "dark") return stored;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+
+  function updateIcon() {
+    if (!icon) return;
+    // Icon shows the theme you'd switch TO, not the current one.
+    icon.textContent = effectiveTheme() === "dark" ? "☀️" : "🌙";
+  }
+  updateIcon();
+
+  if (btn) {
+    btn.addEventListener("click", function () {
+      var next = effectiveTheme() === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try {
+        localStorage.setItem(KEY, next);
+      } catch (e) {}
+      updateIcon();
+    });
+  }
+})();
+
 // --- Markdown toolbar for `textarea` fields ---------------------------------
 // Inserts plain Markdown syntax around the current selection. No editor
 // library -- the field stays a normal <textarea>, formatting just gets

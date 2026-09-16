@@ -37,7 +37,7 @@ def _timestamp() -> str:
 
 
 def backup_filename() -> str:
-    return f"myvault-backup-{_timestamp()}.sqlite3"
+    return f"recodik-backup-{_timestamp()}.sqlite3"
 
 
 def make_consistent_copy(dest_path: str, source_path: str | None = None) -> None:

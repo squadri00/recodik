@@ -24,8 +24,10 @@
   --cal-c6-bg: hsl(250 55% 92%); --cal-c6-ink: hsl(250 50% 40%);
   --cal-c7-bg: hsl(25 65% 88%);  --cal-c7-ink: hsl(25 60% 28%);
 }
+/* Dark palette applies when the system prefers dark AND the user hasn't
+   explicitly picked light via the theme toggle (data-theme="light"). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #12151b; --surface: #1b1f27; --border: #2c313c;
     --text: #e7e9ee; --muted: #9aa1ad; --primary: #4f8bff; --primary-ink: #0b0d10;
     --ok-bg: #16301f; --ok-ink: #7fd7a0;
@@ -43,6 +45,35 @@
     --cal-c7-bg: hsl(25 32% 20%);  --cal-c7-ink: hsl(25 70% 76%);
   }
 }
+
+/* Explicit override via the theme toggle (data-theme="dark"), regardless of
+   what the system preference is. Same values as the media query above. */
+:root[data-theme="dark"] {
+  --bg: #12151b; --surface: #1b1f27; --border: #2c313c;
+  --text: #e7e9ee; --muted: #9aa1ad; --primary: #4f8bff; --primary-ink: #0b0d10;
+  --ok-bg: #16301f; --ok-ink: #7fd7a0;
+  --warn-bg: #3a2c16; --warn-ink: #e6b877;
+  --error-bg: #3a1e20; --error-ink: #f0999e;
+  --shadow: none;
+
+  --cal-c0-bg: hsl(215 35% 22%); --cal-c0-ink: hsl(215 75% 80%);
+  --cal-c1-bg: hsl(265 30% 24%); --cal-c1-ink: hsl(265 70% 84%);
+  --cal-c2-bg: hsl(175 30% 18%); --cal-c2-ink: hsl(175 60% 72%);
+  --cal-c3-bg: hsl(145 28% 18%); --cal-c3-ink: hsl(145 55% 72%);
+  --cal-c4-bg: hsl(320 28% 22%); --cal-c4-ink: hsl(320 65% 82%);
+  --cal-c5-bg: hsl(190 32% 18%); --cal-c5-ink: hsl(190 65% 75%);
+  --cal-c6-bg: hsl(250 30% 24%); --cal-c6-ink: hsl(250 70% 84%);
+  --cal-c7-bg: hsl(25 32% 20%);  --cal-c7-ink: hsl(25 70% 76%);
+}
+
+.theme-toggle {
+  position: fixed; bottom: 1rem; right: 1rem; z-index: 40;
+  width: 40px; height: 40px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  font-size: 1.1rem; line-height: 1; cursor: pointer; box-shadow: var(--shadow);
+  display: flex; align-items: center; justify-content: center;
+}
+.theme-toggle:hover { border-color: var(--primary); }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }

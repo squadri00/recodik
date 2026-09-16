@@ -3,6 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+  /* Apply a saved theme choice before first paint, so there's no flash. */
+  (function () {
+    try {
+      var t = localStorage.getItem('recodik-theme');
+      if (t === 'light' || t === 'dark') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    } catch (e) {}
+  })();
+  </script>
   <title>{% block title %}{{ app_title }}{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="icon" href="{{ url_for('static', filename='recodik-logo.png') }}">
@@ -79,9 +90,9 @@
       </div>
     {% endif %}
     {% if vault_unlocked %}
-      <a class="pill pill-ok" href="{{ url_for('auth.lock') }}" title="Lock the vault">🔓 Unlocked</a>
+      <a class="pill pill-ok" href="{{ url_for('auth.lock') }}" title="Lock {{ app_title }}">🔓 Unlocked</a>
     {% else %}
-      <a class="pill pill-warn" href="{{ url_for('auth.unlock') }}" title="Unlock the vault">🔒 Locked</a>
+      <a class="pill pill-warn" href="{{ url_for('auth.unlock') }}" title="Unlock {{ app_title }}">🔒 Locked</a>
     {% endif %}
     <span class="who">{{ current_user['username'] }}{% if current_user['role'] == 'admin' %} · admin{% endif %}</span>
     <a class="btn btn-ghost" href="{{ url_for('auth.logout') }}">Sign out</a>
@@ -116,6 +127,9 @@
     <p>Recodik is provided "as is," with no warranty of any kind. Eformics Systems is not liable for any loss or damage arising from its use.</p>
   </div>
 </footer>
+<button type="button" class="theme-toggle" data-theme-toggle title="Switch color theme" aria-label="Switch color theme">
+  <span data-theme-icon>🌙</span>
+</button>
 <script src="{{ url_for('static', filename='app.js') }}" defer></script>
 </body>
 </html>

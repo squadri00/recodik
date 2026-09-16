@@ -89,7 +89,7 @@ def export_category(category_id: int):
         abort(404)
     payload = build_template(category, get_fields(category_id))
     body = json.dumps(payload, indent=2, ensure_ascii=False)
-    filename = (slugify_key(category["name"]) or "category") + ".myvault.json"
+    filename = (slugify_key(category["name"]) or "category") + ".recodik.json"
     return Response(
         body,
         mimetype="application/json",
