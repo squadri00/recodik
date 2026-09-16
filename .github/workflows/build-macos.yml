@@ -1,0 +1,90 @@
+name: Build macOS app
+
+# Manual button in the Actions tab, or automatically when you push a tag
+# like v0.11.0 (in which case the .zip is also attached to a GitHub Release).
+#
+# Apple Silicon (arm64) only — macos-14 runners are M1. PyInstaller does not
+# cross-compile, so this has to run on an actual Mac; a GitHub-hosted runner
+# stands in for one so nobody needs to own a Mac to ship this build.
+#
+# The app is NOT code-signed or notarized. First launch will be blocked by
+# Gatekeeper ("Apple could not verify...") until the user explicitly allows
+# it once — see the note on the Recodik download page for the exact steps.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write   # only used to attach the build to a Release on a tag push
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install Pillow
+
+      - name: Build the app icon (.icns) from the logo
+        run: |
+          python - <<'PY'
+          import os
+          from PIL import Image
+
+          src = Image.open("myvault/static/recodik-logo.png").convert("RGBA")
+
+          # Pad to square (no stretching) so the mark isn't distorted.
+          side = max(src.size)
+          canvas = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+          canvas.paste(src, ((side - src.width) // 2, (side - src.height) // 2), src)
+
+          out_dir = "packaging/mac/recodik.iconset"
+          os.makedirs(out_dir, exist_ok=True)
+          for size, name in [
+              (16, "icon_16x16"), (32, "icon_16x16@2x"),
+              (32, "icon_32x32"), (64, "icon_32x32@2x"),
+              (128, "icon_128x128"), (256, "icon_128x128@2x"),
+              (256, "icon_256x256"), (512, "icon_256x256@2x"),
+              (512, "icon_512x512"), (1024, "icon_512x512@2x"),
+          ]:
+              canvas.resize((size, size), Image.LANCZOS).save(f"{out_dir}/{name}.png")
+          PY
+          iconutil -c icns packaging/mac/recodik.iconset -o packaging/mac/recodik.icns
+          rm -rf packaging/mac/recodik.iconset
+
+      - name: Build with PyInstaller
+        run: pyinstaller myvault.spec
+
+      - name: Zip the .app
+        id: zip
+        run: |
+          cd dist
+          APP=$(ls -d *.app)
+          NAME="${APP%.app}"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "${NAME}-macOS-arm64.zip"
+          echo "zip_name=${NAME}-macOS-arm64.zip" >> "$GITHUB_OUTPUT"
+          echo "app_name=$NAME" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.zip.outputs.app_name }}-macOS-arm64
+          path: dist/${{ steps.zip.outputs.zip_name }}
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: dist/${{ steps.zip.outputs.zip_name }}

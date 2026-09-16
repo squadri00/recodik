@@ -8,6 +8,7 @@ PyInstaller does NOT cross-compile: build the Windows .exe on Windows, the macOS
 binary on macOS, the Linux binary on Linux.
 """
 
+import os
 from datetime import datetime, timezone
 
 from PyInstaller.utils.hooks import collect_submodules
@@ -101,6 +102,13 @@ a = Analysis(
 
 pyz = PYZ(a.pure)
 
+# Only meaningful on macOS: packaging/mac/recodik.icns, generated from
+# myvault/static/recodik-logo.png by the CI build step (see
+# .github/workflows/build-macos.yml) before pyinstaller runs. Absent on
+# Windows/Linux builds, so icon stays None there exactly as before.
+_icns = os.path.join("packaging", "mac", "recodik.icns")
+_icon = _icns if _sys.platform == "darwin" and os.path.exists(_icns) else None
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -120,5 +128,24 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,
+    icon=_icon,
 )
+
+# macOS only: wrap the raw executable in a double-clickable Recodik.app so it
+# behaves like a normal Mac application in Finder/Launchpad. Windows and
+# Linux builds stop at the EXE() above, unchanged from before.
+if _sys.platform == "darwin":
+    app = BUNDLE(
+        exe,
+        name=f"{_exe_name}.app",
+        icon=_icon,
+        bundle_identifier="com.eformics.recodik",
+        info_plist={
+            "CFBundleName": "Recodik",
+            "CFBundleDisplayName": "Recodik",
+            "CFBundleShortVersionString": _verstr,
+            "CFBundleVersion": _verstr,
+            "NSHighResolutionCapable": True,
+            "NSHumanReadableCopyright": "Copyright (c) Eformics Systems",
+        },
+    )

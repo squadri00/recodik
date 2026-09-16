@@ -101,14 +101,31 @@ pip install -r requirements-dev.txt
 pyinstaller myvault.spec
 ```
 
-Output: `dist/Recodik` (`dist/Recodik.exe` on Windows). It is a single file with
-no dependencies — copy it anywhere and double-click.
+Output: `dist/Recodik` (`dist/Recodik.exe` on Windows, `dist/Recodik.app` on
+macOS). It is a single file/bundle with no dependencies — copy it anywhere and
+double-click.
 
 > **PyInstaller does not cross-compile.** A Windows `.exe` must be built on
 > Windows, a macOS binary on macOS, a Linux binary on Linux. Run the three
 > builds on three machines (or CI runners) to ship all platforms.
 
 To stop the app, close its console window.
+
+### macOS build (via GitHub Actions, no Mac required)
+
+`.github/workflows/build-macos.yml` builds `Recodik.app` (Apple Silicon,
+unsigned) on a GitHub-hosted macOS runner:
+
+- **Manual:** repo → Actions tab → "Build macOS app" → Run workflow.
+- **Automatic:** push a tag like `v0.11.0` — the build also attaches the
+  zipped `.app` to a GitHub Release.
+
+The app icon is generated at build time from `myvault/static/recodik-logo.png`
+— nothing to maintain by hand. Since it isn't signed/notarized, first launch
+needs one manual override: **right-click the app → Open → Open** (Gatekeeper
+blocks a plain double-click the first time only). Enrolling in the Apple
+Developer Program ($99/yr) and adding signing + notarization to the workflow
+would remove that step entirely.
 
 ---
 

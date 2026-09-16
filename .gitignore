@@ -16,6 +16,8 @@ instance/
 build/
 dist/
 version_info.txt
+packaging/mac/recodik.iconset/
+packaging/mac/recodik.icns
 
 # Editor / OS
 .vscode/
