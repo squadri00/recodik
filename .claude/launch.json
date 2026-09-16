@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "myvault-dev",
+      "name": "recodik-dev",
       "runtimeExecutable": "${workspaceFolder}/.venv/Scripts/python.exe",
       "runtimeArgs": ["run.py"],
       "port": 5000
