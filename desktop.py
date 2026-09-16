@@ -4,7 +4,10 @@ Double-clicking the executable:
   1. uses a fixed port on localhost (so the URL stays the same every launch),
      falling back to a free one if that port is already taken,
   2. stores the database under the per-user app-data directory,
-  3. creates a Desktop shortcut the first time it's ever run,
+  3. keeps a Desktop shortcut pointed at this exe (the built filename carries
+     a version + date, so it changes on every rebuild -- the shortcut target
+     is refreshed on every launch rather than created once, so it never goes
+     stale),
   4. starts the waitress WSGI server in a background thread,
   5. opens the default web browser at the app,
   6. keeps running until the console window is closed.
@@ -47,11 +50,14 @@ def _resolve_port() -> int:
 
 
 def _ensure_desktop_shortcut(data_dir: str) -> None:
-    """Create a Desktop shortcut to this exe, once, on first run only."""
+    """Point the Desktop shortcut at this exe, refreshed on every launch.
+
+    The built filename carries a version + date (see myvault.spec), so it's
+    different on every rebuild. Re-pointing the shortcut every launch (instead
+    of once, via a marker file) means it's never left targeting a build that
+    no longer exists after a rebuild + folder swap.
+    """
     if sys.platform != "win32" or not getattr(sys, "frozen", False):
-        return
-    marker = os.path.join(data_dir, ".desktop_shortcut_created")
-    if os.path.exists(marker):
         return
     try:
         exe_path = sys.executable
@@ -72,12 +78,6 @@ def _ensure_desktop_shortcut(data_dir: str) -> None:
         )
     except Exception:
         pass  # a shortcut failure must never stop the app from starting
-    finally:
-        try:
-            with open(marker, "w", encoding="utf-8") as f:
-                f.write("1")
-        except OSError:
-            pass
 
 
 def main() -> None:

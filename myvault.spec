@@ -2,11 +2,13 @@
 """PyInstaller spec for the Recodik desktop executable.
 
 Build:  pyinstaller myvault.spec
-Output: dist/Recodik  (dist/Recodik.exe on Windows)
+Output: dist/Recodik-<version>-<build date>.exe (Windows)
 
 PyInstaller does NOT cross-compile: build the Windows .exe on Windows, the macOS
 binary on macOS, the Linux binary on Linux.
 """
+
+from datetime import datetime, timezone
 
 from PyInstaller.utils.hooks import collect_submodules
 
@@ -21,6 +23,12 @@ from myvault import __version__ as _app_version
 _ver_parts = [int(p) for p in _app_version.split(".")] + [0, 0, 0, 0]
 _filevers = tuple(_ver_parts[:4])
 _verstr = ".".join(str(p) for p in _filevers)
+
+# The built exe's own filename carries the version + build date, so anyone
+# looking at the file (e.g. on the download server) can tell at a glance
+# whether it's the current build without opening it.
+_build_date = datetime.now(timezone.utc).strftime("%Y%m%d")
+_exe_name = f"Recodik-{_app_version}-{_build_date}"
 
 with open("version_info.txt", "w", encoding="utf-8") as _f:
     _f.write(f"""VSVersionInfo(
@@ -44,7 +52,7 @@ with open("version_info.txt", "w", encoding="utf-8") as _f:
         StringStruct(u'FileVersion', u'{_verstr}'),
         StringStruct(u'InternalName', u'Recodik'),
         StringStruct(u'LegalCopyright', u'Copyright (c) Eformics Systems'),
-        StringStruct(u'OriginalFilename', u'Recodik.exe'),
+        StringStruct(u'OriginalFilename', u'{_exe_name}.exe'),
         StringStruct(u'ProductName', u'Recodik'),
         StringStruct(u'ProductVersion', u'{_verstr}')])
       ]),
@@ -99,7 +107,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name="Recodik",
+    name=_exe_name,
     version="version_info.txt",
     debug=False,
     bootloader_ignore_signals=False,
