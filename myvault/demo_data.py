@@ -8,10 +8,18 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from datetime import datetime, timedelta, timezone
 
 from .util import now_iso, slugify_key
 
 TAG_NAME = "Demo data"
+
+
+def _rel(days: int) -> str:
+    """A date `days` from the moment this install seeds its demo data --
+    never a fixed calendar date, so alerts/reminders still look current
+    (upcoming vs. overdue) no matter when someone installs Recodik."""
+    return (datetime.now(timezone.utc) + timedelta(days=days)).strftime("%Y-%m-%d")
 
 
 def _add_category(db: sqlite3.Connection, name: str, icon: str, created_by: int | None) -> int:
@@ -129,18 +137,18 @@ def seed(db: sqlite3.Connection, created_by: int | None = None) -> list[int]:
     type_id = {name: record(types_cat, {k_typename: name}) for name in type_names}
 
     domains = [
-        ("brightleafbakery.com", "Namecheap", "2026-10-05", "Bright Leaf Bakery"),
-        ("harborviewdental.com", "GoDaddy", "2026-11-20", "Harborview Dental"),
-        ("northgatefitness.com", "Namecheap", "2026-10-01", "Northgate Fitness"),
-        ("summitlegalgroup.com", "GoDaddy", "2027-01-15", "Summit Legal Group"),
-        ("cedarvinerealty.com", "Google Domains", "2026-09-30", "Cedar & Vine Realty"),
-        ("bluewavelogistics.com", "Namecheap", "2026-12-10", "BlueWave Logistics"),
-        ("silverlineretail.com", "GoDaddy", "2026-10-08", "Silverline Retail Co."),
+        ("brightleafbakery.com", "Namecheap", 18, "Bright Leaf Bakery"),
+        ("harborviewdental.com", "GoDaddy", 64, "Harborview Dental"),
+        ("northgatefitness.com", "Namecheap", 14, "Northgate Fitness"),
+        ("summitlegalgroup.com", "GoDaddy", 120, "Summit Legal Group"),
+        ("cedarvinerealty.com", "Google Domains", 13, "Cedar & Vine Realty"),
+        ("bluewavelogistics.com", "Namecheap", 84, "BlueWave Logistics"),
+        ("silverlineretail.com", "GoDaddy", 21, "Silverline Retail Co."),
     ]
     domain_id = {}
-    for dom, registrar, expiry, cust in domains:
+    for dom, registrar, expiry_days, cust in domains:
         domain_id[dom] = record(domains_cat, {
-            k_domname: dom, k_registrar: registrar, k_domexpiry: expiry,
+            k_domname: dom, k_registrar: registrar, k_domexpiry: _rel(expiry_days),
             k_domcust: cust_id[cust],
         })
 
@@ -160,45 +168,47 @@ def seed(db: sqlite3.Connection, created_by: int | None = None) -> list[int]:
             k_hpass: "", k_hemail: email, k_hsupport: support,
         })
 
+    # (name, customer, type, start_days, cost, invoice_days, domain) --
+    # start_days/invoice_days are offsets from install day (negative = past).
     projects = [
         ("Bright Leaf Website Redesign", "Bright Leaf Bakery", "Website Development",
-         "2026-08-01", "2400", "2026-09-20", "brightleafbakery.com"),
+         -47, "2400", 3, "brightleafbakery.com"),
         ("Bright Leaf POS Integration", "Bright Leaf Bakery", "Software Integration",
-         "2026-08-15", "1800", "2026-10-01", "brightleafbakery.com"),
+         -33, "1800", 14, "brightleafbakery.com"),
         ("Harborview Online Booking System", "Harborview Dental", "Software Integration",
-         "2026-07-15", "3800", "2026-09-23", "harborviewdental.com"),
+         -64, "3800", 6, "harborviewdental.com"),
         ("Harborview Network Upgrade", "Harborview Dental", "Network Infrastructure Setup",
-         "2026-06-01", "5200", "2026-11-01", "harborviewdental.com"),
+         -108, "5200", 45, "harborviewdental.com"),
         ("Northgate Fitness Mobile App", "Northgate Fitness", "Mobile App Development",
-         "2026-05-10", "12000", "2026-09-23", "northgatefitness.com"),
+         -130, "12000", 6, "northgatefitness.com"),
         ("Northgate Fitness Website Refresh", "Northgate Fitness", "Website Development",
-         "2026-08-20", "2200", "2026-10-05", "northgatefitness.com"),
+         -28, "2200", 18, "northgatefitness.com"),
         ("Summit Legal Cloud Migration", "Summit Legal Group", "Cloud Migration",
-         "2026-06-15", "9800", "2026-09-30", "summitlegalgroup.com"),
+         -94, "9800", 13, "summitlegalgroup.com"),
         ("Summit Legal Cybersecurity Audit", "Summit Legal Group", "Cybersecurity Audit",
-         "2026-08-01", "4500", "2026-09-19", "summitlegalgroup.com"),
+         -47, "4500", 2, "summitlegalgroup.com"),
         ("Cedar & Vine Realty Website Launch", "Cedar & Vine Realty", "Website Development",
-         "2026-07-01", "3100", "2026-09-22", "cedarvinerealty.com"),
+         -78, "3100", 5, "cedarvinerealty.com"),
         ("Cedar & Vine CRM Integration", "Cedar & Vine Realty", "Software Integration",
-         "2026-08-10", "2700", "2026-10-10", "cedarvinerealty.com"),
+         -38, "2700", 23, "cedarvinerealty.com"),
         ("BlueWave Logistics Fleet Tracking App", "BlueWave Logistics", "Mobile App Development",
-         "2026-04-20", "18000", "2026-10-15", "bluewavelogistics.com"),
+         -150, "18000", 28, "bluewavelogistics.com"),
         ("BlueWave Data Backup Solution", "BlueWave Logistics", "Data Backup & Recovery",
-         "2026-08-05", "3300", "2026-09-21", "bluewavelogistics.com"),
+         -43, "3300", 4, "bluewavelogistics.com"),
         ("BlueWave IT Support Retainer", "BlueWave Logistics", "IT Support & Maintenance",
-         "2026-01-01", "800", "2026-09-30", "bluewavelogistics.com"),
+         -259, "800", 13, "bluewavelogistics.com"),
         ("Silverline Retail E-commerce Platform", "Silverline Retail Co.", "Website Development",
-         "2026-03-01", "15000", "2026-09-23", "silverlineretail.com"),
+         -200, "15000", 6, "silverlineretail.com"),
         ("Silverline Retail Cybersecurity Audit", "Silverline Retail Co.", "Cybersecurity Audit",
-         "2026-08-25", "4200", "2026-10-12", "silverlineretail.com"),
+         -23, "4200", 25, "silverlineretail.com"),
         ("Silverline Retail Network Setup", "Silverline Retail Co.", "Network Infrastructure Setup",
-         "2026-07-10", "6100", "2026-11-05", "silverlineretail.com"),
+         -69, "6100", 49, "silverlineretail.com"),
     ]
     project_ids = []
-    for pname, cust, ptype, start, cost, invoice, dom in projects:
+    for pname, cust, ptype, start_days, cost, invoice_days, dom in projects:
         rid = record(projects_cat, {
             k_pname: pname, k_pcust: cust_id[cust], k_ptype: type_id[ptype],
-            k_pstart: start, k_pcost: cost, k_pinvoice: invoice,
+            k_pstart: _rel(start_days), k_pcost: cost, k_pinvoice: _rel(invoice_days),
             k_pdomain: domain_id[dom], k_phosting: hosting_id[cust], k_pdocs: "",
         })
         project_ids.append(rid)
