@@ -18,7 +18,7 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import crypto
+from . import crypto, demo_data
 from .db import get_db, get_meta, set_meta
 from .util import now_iso, safe_next
 
@@ -135,6 +135,19 @@ def setup():
         user = db.execute(
             "SELECT * FROM users WHERE username=?", (username,)
         ).fetchone()
+
+        # Brand-new install (this is the very first admin ever created): load
+        # sample data so there's something real to explore instead of a blank
+        # dashboard. See Settings -> Sample data to remove it later.
+        if demo_data.is_untouched_install(db):
+            from . import search  # local import: search.py imports this module
+
+            record_ids = demo_data.seed(db, created_by=user["id"])
+            db.commit()
+            for rid in record_ids:
+                search.reindex_record(db, rid)
+            db.commit()
+
         session.clear()
         session["user_id"] = user["id"]
         flash("Setup complete. Your vault is unlocked.", "success")

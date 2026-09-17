@@ -23,7 +23,7 @@ from flask import (
 )
 from werkzeug.security import generate_password_hash
 
-from . import audit, backup
+from . import audit, backup, demo_data, search
 from .auth import MIN_PASSWORD_LEN, admin_required
 from .db import close_db, get_db
 from .util import now_iso
@@ -31,6 +31,7 @@ from .util import now_iso
 bp = Blueprint("settings", __name__, url_prefix="/settings")
 
 RESTORE_CONFIRM_PHRASE = "RESTORE"
+RESET_DEMO_CONFIRM_PHRASE = "DELETE DEMO DATA"
 
 VALID_ROLES = ("admin", "member")
 
@@ -45,10 +46,21 @@ def _admin_count(db) -> int:
     return db.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'").fetchone()[0]
 
 
+def _demo_data_count(db) -> int:
+    row = db.execute(
+        "SELECT COUNT(*) AS n FROM record_tags rt "
+        "JOIN tags t ON t.id = rt.tag_id AND t.name = ? "
+        "JOIN records r ON r.id = rt.record_id AND r.deleted_at IS NULL",
+        (demo_data.TAG_NAME,),
+    ).fetchone()
+    return row["n"] if row else 0
+
+
 @bp.route("/")
 @admin_required
 def index():
-    return render_template("settings.html", users=_users(), coming_soon=False)
+    return render_template("settings.html", users=_users(), coming_soon=False,
+                            demo_data_count=_demo_data_count(get_db()))
 
 
 @bp.route("/audit-log")
@@ -204,3 +216,26 @@ def backup_restore():
         "success",
     )
     return redirect(url_for("auth.login"))
+
+
+# --- sample data --------------------------------------------------------------
+
+@bp.route("/demo-data/reset", methods=("POST",))
+@admin_required
+def reset_demo_data():
+    """Wipe every category, field, record, tag and attached file -- a full
+    reset back to a blank vault. Meant for clearing the sample data a new
+    install ships with, once it's served its purpose (see demo_data.py)."""
+    if (request.form.get("confirm") or "").strip() != RESET_DEMO_CONFIRM_PHRASE:
+        flash(f'Type "{RESET_DEMO_CONFIRM_PHRASE}" (exactly) to confirm. Nothing was changed.',
+              "error")
+        return redirect(url_for("settings.index"))
+
+    db = get_db()
+    db.execute("DELETE FROM categories")  # cascades to fields, records, files, record_tags
+    db.commit()
+    search.reindex_all(db)
+    db.commit()
+    audit.log("demo_data_reset")
+    flash("All data cleared. Start by creating your first category.", "success")
+    return redirect(url_for("categories.manage"))

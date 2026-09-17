@@ -59,6 +59,30 @@
   </form>
 </div>
 
+{% if demo_data_count %}
+<div class="card" style="margin-top:1.25rem">
+  <h2>Sample data</h2>
+  <p class="muted">This install came with {{ demo_data_count }} example records (customers,
+    domains, hosting accounts and projects) so you'd have something real to click through.
+    Tagged <strong>Demo data</strong> — browse them under
+    <a href="{{ url_for('tags.browse') }}">Tags</a> any time.</p>
+  <p class="muted">Want to keep a copy first? Use <strong>Download a full backup</strong> below
+    before clearing it.</p>
+  <div class="callout callout-warn">
+    <strong>This permanently deletes every category, field and record</strong> —
+    the sample data and anything else you've added since. Use it once you're
+    ready to start building your own system from a blank slate.
+  </div>
+  <form method="post" action="{{ url_for('settings.reset_demo_data') }}"
+        onsubmit="return confirm('This deletes everything currently in this vault, not just the sample data. Continue?');">
+    <label>Type <code>DELETE DEMO DATA</code> to confirm
+      <input type="text" name="confirm" placeholder="DELETE DEMO DATA" autocomplete="off" required>
+    </label>
+    <button class="btn btn-danger" type="submit">Clear all data</button>
+  </form>
+</div>
+{% endif %}
+
 <div class="card" style="margin-top:1.25rem">
   <h2>Backup &amp; restore</h2>
   <p class="muted">Everything you've stored — every category, field, record, encrypted

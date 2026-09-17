@@ -27,6 +27,7 @@ ACTION_LABELS = {
     "record_clone": "Cloned",
     "category_create": "Category created",
     "category_delete": "Category deleted",
+    "demo_data_reset": "Cleared all sample data",
 }
 
 
