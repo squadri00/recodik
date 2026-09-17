@@ -12,6 +12,7 @@ the engine. Password-type fields and uploaded files are **encrypted at rest**.
 - Two deployment targets from one codebase:
   1. a double-click **desktop executable** (no install, for non-technical users);
   2. a **Docker** container for always-on, multi-user use.
+- Open source under the [MIT License](LICENSE).
 
 ## Feature overview
 
